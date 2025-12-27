@@ -1,0 +1,12 @@
+# General
+.DS_Store
+.idea/
+
+# Sub-projects
+node_modules/
+dist/
+build/
+.dart_tool/
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies

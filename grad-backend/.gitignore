@@ -1,0 +1,12 @@
+node_modules
+.env
+dist
+*.log
+coverage
+.DS_Store
+
+# IntelliJ IDEA
+.idea/
+
+# Firebase (Bu proje için arkadaşlarımızın testi için açık bırakıldı)
+!src/config/serviceAccountKey.json
