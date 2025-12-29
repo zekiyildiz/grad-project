@@ -26,6 +26,11 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _state == AuthState.authenticated;
   bool get isLoading => _state == AuthState.loading;
+  
+  // Role-based getters
+  int? get userRoleId => _user?.roleId;
+  bool get isAdmin => _user?.roleId == 0;
+  bool get isEmployee => _user?.roleId == 2;
 
   /// Initialize auth state - check if user is already logged in
   Future<void> init() async {

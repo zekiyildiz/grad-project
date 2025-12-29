@@ -42,6 +42,7 @@ export class AuthService {
                 displayName: data.displayName || fullName,
                 photoURL: '',
                 role: 'user',
+                roleId: 1, // Default roleId: 0=admin, 1=user, 2=employee
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
@@ -157,6 +158,7 @@ export class AuthService {
                         displayName: verifyResult.displayName || '',
                         photoURL: '',
                         role: 'user',
+                        roleId: 1, // Default roleId for users not in Firestore
                     };
                 }
             } catch (firestoreError) {
@@ -167,6 +169,7 @@ export class AuthService {
                     displayName: verifyResult.displayName || '',
                     photoURL: '',
                     role: 'user',
+                    roleId: 1, // Default roleId
                 };
             }
 
@@ -241,6 +244,7 @@ export class AuthService {
                     displayName: name || '',
                     photoURL: picture || '',
                     role: 'user', // default role
+                    roleId: 1, // default roleId: 0=admin, 1=user, 2=employee
                     createdAt: new Date(),
                     updatedAt: new Date()
                 };

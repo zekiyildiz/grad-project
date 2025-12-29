@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'homepage_screen.dart';
+import 'admin_panel.dart'; // Admin panel import
+import 'employee_tasks_screen.dart'; // Employee panel import
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -85,9 +87,22 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
+      // Role-based navigation: roleId 0 = Admin, 1 = User, 2 = Employee
+      final roleId = authProvider.userRoleId;
+      print('🟢 Login successful, roleId: $roleId');
+      
+      Widget targetScreen;
+      if (roleId == 0) {
+        targetScreen = const AdminDashboardScreen();
+      } else if (roleId == 2) {
+        targetScreen = const EmployeeTasksScreen();
+      } else {
+        targetScreen = const HomepageScreen();
+      }
+      
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomepageScreen()),
+        MaterialPageRoute(builder: (context) => targetScreen),
       );
     } else {
       // Hata mesajını state'e kaydet ve göster

@@ -12,6 +12,8 @@ import 'profile_screen.dart';
 import 'settings_screen.dart'; // Ayarlar sayfası importu
 import 'notification_screen.dart'; // Bildirimler sayfası importu
 import 'login_screen.dart'; // Login sayfası importu
+import 'baskent153_screen.dart'; // Başkent 153 sayfası importu
+import 'emergency_screen.dart'; // Acil durum sayfası importu
 import '../providers/theme_provider.dart'; // ThemeProvider importu
 import '../providers/auth_provider.dart'; // AuthProvider importu
 
@@ -419,14 +421,20 @@ class HomepageScreen extends StatelessWidget {
                     icon: Icons.info_outline,
                     label: 'Başkent 153',
                     color: Colors.orange.shade700,
-                    onTap: () => print('Başkent 153 (Call) tıklandı'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const Baskent153Screen()),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   _buildBottomActionCard(
                     icon: Icons.warning_amber,
                     label: 'Acil Bildir',
                     color: Colors.red.shade700,
-                    onTap: () => print('Acil Bildir tıklandı'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const EmergencyScreen()),
+                    ),
                   ),
                 ],
               ),

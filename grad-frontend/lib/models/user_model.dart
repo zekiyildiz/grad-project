@@ -9,6 +9,7 @@ class UserModel {
   final String? neighborhood;
   final String? avatarUrl;
   final String? role;
+  final int? roleId; // 0=admin, 1=user, 2=employee
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -22,6 +23,7 @@ class UserModel {
     this.neighborhood,
     this.avatarUrl,
     this.role,
+    this.roleId,
     this.createdAt,
     this.updatedAt,
   });
@@ -38,6 +40,7 @@ class UserModel {
       neighborhood: json['neighborhood'],
       avatarUrl: json['avatarUrl'] ?? json['photoURL'],
       role: json['role'],
+      roleId: json['roleId'] != null ? (json['roleId'] as num).toInt() : null,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
           : null,
@@ -59,6 +62,7 @@ class UserModel {
       if (neighborhood != null) 'neighborhood': neighborhood,
       if (avatarUrl != null) 'avatarUrl': avatarUrl,
       if (role != null) 'role': role,
+      if (roleId != null) 'roleId': roleId,
     };
   }
 
@@ -73,6 +77,7 @@ class UserModel {
     String? neighborhood,
     String? avatarUrl,
     String? role,
+    int? roleId,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -84,6 +89,7 @@ class UserModel {
       neighborhood: neighborhood ?? this.neighborhood,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       role: role ?? this.role,
+      roleId: roleId ?? this.roleId,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
