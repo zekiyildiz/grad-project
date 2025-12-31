@@ -45,6 +45,13 @@ dependencies:
   # Simple key-value storage
   shared_preferences: ^2.2.2
 
+  image_picker: ^1.0.4       # For Camera and Gallery
+  # flutter_vision: ^1.1.4     # For YOLO Model
+  flutter_vision: ^2.0.0
+
+  geolocator: ^13.0.1  # Konum almak için
+  geocoding: ^3.0.0    # Adres çevirmek için
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -67,6 +74,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:
+      - assets/model/best_float32.tflite
+      - assets/model/labels.txt
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

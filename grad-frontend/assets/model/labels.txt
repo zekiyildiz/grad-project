@@ -1,0 +1,8 @@
+bench
+electrical_panel
+garbage_bin
+poster
+pothole
+scooter
+traffic_lights
+tree

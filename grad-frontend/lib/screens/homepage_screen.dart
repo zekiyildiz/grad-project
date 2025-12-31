@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Provider paketini ekledik
+import 'package:provider/provider.dart';
 
 // Diğer ekranların importları
 import 'complaint_screen.dart';
@@ -9,13 +9,14 @@ import 'survey_screen.dart';
 import 'help_screen.dart';
 import 'events_screen.dart';
 import 'profile_screen.dart';
-import 'settings_screen.dart'; // Ayarlar sayfası importu
-import 'notification_screen.dart'; // Bildirimler sayfası importu
-import 'login_screen.dart'; // Login sayfası importu
-import 'baskent153_screen.dart'; // Başkent 153 sayfası importu
-import 'emergency_screen.dart'; // Acil durum sayfası importu
-import '../providers/theme_provider.dart'; // ThemeProvider importu
-import '../providers/auth_provider.dart'; // AuthProvider importu
+import 'settings_screen.dart';
+import 'notification_screen.dart';
+import 'login_screen.dart';
+import 'baskent153_screen.dart';
+import 'emergency_screen.dart';
+import 'performance_screen.dart'; // EKLENDİ: Performans sayfası importu
+import '../providers/theme_provider.dart';
+import '../providers/auth_provider.dart';
 
 class HomepageScreen extends StatelessWidget {
   const HomepageScreen({Key? key}) : super(key: key);
@@ -26,24 +27,31 @@ class HomepageScreen extends StatelessWidget {
   static const Color bottomNavBackground = Color(0xFFF0F0F0);
 
   // Hızlı Erişim Butonları için Yardımcı Widget
-  Widget _buildQuickActionButton(BuildContext context, IconData icon, String label, Widget screen, {int? badgeCount}) {
+  Widget _buildQuickActionButton(
+    BuildContext context,
+    IconData icon,
+    String label,
+    Widget screen, {
+    int? badgeCount,
+  }) {
     return Column(
       children: [
         Stack(
           clipBehavior: Clip.none,
           children: [
-            // Dairesel Buton
             CircleAvatar(
               radius: 30,
               backgroundColor: primaryBlue.withOpacity(0.1),
               child: IconButton(
                 icon: Icon(icon, size: 30, color: primaryBlue),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => screen),
+                  );
                 },
               ),
             ),
-            // Bildirim Sayısı (Yalnızca varsa)
             if (badgeCount != null && badgeCount > 0)
               Positioned(
                 right: -5,
@@ -73,13 +81,16 @@ class HomepageScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 5),
-        // Etiket
         SizedBox(
           width: 80,
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: primaryBlue, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontSize: 12,
+              color: primaryBlue,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -87,7 +98,12 @@ class HomepageScreen extends StatelessWidget {
   }
 
   // Alt Menü Kartları için Yardımcı Widget
-  Widget _buildBottomActionCard({required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
+  Widget _buildBottomActionCard({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -119,7 +135,10 @@ class HomepageScreen extends StatelessWidget {
   }
 
   // Çıkış Onay Dialoğu
-  void _showLogoutConfirmDialog(BuildContext context, ThemeProvider themeProvider) {
+  void _showLogoutConfirmDialog(
+    BuildContext context,
+    ThemeProvider themeProvider,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -133,7 +152,10 @@ class HomepageScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              final authProvider = Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              );
               await authProvider.logout();
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
@@ -156,16 +178,13 @@ class HomepageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Provider'ı çağırarak ayarlara ve çeviriye erişim sağlıyoruz
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      // 1. AppBar: Başlık Çubuğu
       appBar: AppBar(
         backgroundColor: primaryBlue,
-        // 2. Başlığı Dinamik Yapıyoruz (Türkçe/İngilizce değişir)
         title: Text(
-          themeProvider.translate('app_name'), 
+          themeProvider.translate('app_name'),
           style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -182,22 +201,22 @@ class HomepageScreen extends StatelessWidget {
         ],
       ),
 
-      // Drawer (Yan Menü)
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // Header
             DrawerHeader(
-              decoration: const BoxDecoration(
-                color: primaryBlue,
-              ),
+              decoration: const BoxDecoration(color: primaryBlue),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    themeProvider.translate('app_name'), // Dinamik Başlık
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    themeProvider.translate('app_name'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -208,20 +227,24 @@ class HomepageScreen extends StatelessWidget {
               ),
             ),
 
-            // MENÜ ÖGELERİ
             ListTile(
               leading: const Icon(Icons.home, color: Colors.blue),
-              title: Text(themeProvider.translate('home')), // Dinamik "Ana Sayfa" yazısı
+              title: Text(themeProvider.translate('home')),
               onTap: () {
                 Navigator.pop(context);
               },
             ),
             ListTile(
               leading: const Icon(Icons.person, color: Colors.blue),
-              title: const Text('Profilim'), // Diğerlerini çevirmek için ThemeProvider sözlüğüne ekleme yapmalısınız
+              title: const Text('Profilim'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -229,7 +252,12 @@ class HomepageScreen extends StatelessWidget {
               title: const Text('Bildirimlerim'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -237,7 +265,12 @@ class HomepageScreen extends StatelessWidget {
               title: const Text('Şikayet Geçmişim'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HistoryScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -245,7 +278,10 @@ class HomepageScreen extends StatelessWidget {
               title: const Text('Etkinlik Takvimi'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const EventsScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EventsScreen()),
+                );
               },
             ),
             ListTile(
@@ -253,23 +289,30 @@ class HomepageScreen extends StatelessWidget {
               title: const Text('Öneri/Anket'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SurveyScreen()));
-              },
-            ),
-            // Performans & Rozetler Sayfası
-            ListTile(
-              leading: const Icon(Icons.emoji_events, color: Colors.blue), // Kupa ikonu
-              title: const Text('Performans & Rozetler'),
-              onTap: () {
-                Navigator.pop(context);
-                // Performans ekranına yönlendirme
-                // NOT: performance_screen.dart dosyasının import edildiğinden emin olun.
-                // Eğer import hatası alırsanız dosyanın en üstüne import 'performance_screen.dart'; ekleyin.
-                // Şimdilik yorum satırı olarak bırakıyorum, dosya varsa açabilirsiniz:
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => const PerformanceScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SurveyScreen()),
+                );
               },
             ),
 
+            // --- DÜZELTİLEN KISIM: Performans & Rozetler Sayfası ---
+            ListTile(
+              leading: const Icon(Icons.emoji_events, color: Colors.blue),
+              title: const Text('Performans & Rozetler'),
+              onTap: () {
+                Navigator.pop(context);
+                // Artık PerformanceScreen açılıyor
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PerformanceScreen(),
+                  ),
+                );
+              },
+            ),
+
+            // -----------------------------------------------------
             const Divider(),
 
             ListTile(
@@ -277,7 +320,12 @@ class HomepageScreen extends StatelessWidget {
               title: const Text('İletişim'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ContactScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -285,17 +333,24 @@ class HomepageScreen extends StatelessWidget {
               title: const Text('Yardım/SSS'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HelpScreen()),
+                );
               },
             ),
-            
-            // AYARLAR BUTONU
+
             ListTile(
               leading: const Icon(Icons.settings, color: Colors.blueGrey),
-              title: Text(themeProvider.translate('settings_title')), // Dinamik Ayarlar Yazısı
+              title: Text(themeProvider.translate('settings_title')),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
               },
             ),
 
@@ -303,7 +358,7 @@ class HomepageScreen extends StatelessWidget {
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Çıkış Yap'),
               onTap: () {
-                Navigator.pop(context); // Drawer'ı kapat
+                Navigator.pop(context);
                 _showLogoutConfirmDialog(context, themeProvider);
               },
             ),
@@ -311,11 +366,9 @@ class HomepageScreen extends StatelessWidget {
         ),
       ),
 
-      // 3. Body: Ana Sayfa Gövdesi
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Üstteki Afiş Alanı (Görsel Varsa Gösterir)
             Container(
               height: 200,
               margin: const EdgeInsets.all(16.0),
@@ -333,7 +386,7 @@ class HomepageScreen extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.asset(
-                  'assets/images/yesilcam_geceleri.jpg', // Eklediğiniz görselin yolu
+                  'assets/images/yesilcam_geceleri.jpg',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Center(
                     child: Text(
@@ -348,14 +401,15 @@ class HomepageScreen extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // Ana Eylem Butonu (Şikayet/Durum Bildir)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ComplaintScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const ComplaintScreen(),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -377,7 +431,6 @@ class HomepageScreen extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // Hızlı Erişim Butonları
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -389,7 +442,7 @@ class HomepageScreen extends StatelessWidget {
                     Icons.notifications_active,
                     'Bildirimler',
                     const NotificationScreen(),
-                    badgeCount: 2, // Örnek sayı
+                    badgeCount: 2,
                   ),
                   _buildQuickActionButton(
                     context,
@@ -411,7 +464,6 @@ class HomepageScreen extends StatelessWidget {
             const Divider(height: 1, indent: 16, endIndent: 16),
             const SizedBox(height: 10),
 
-            // Alt Kısım: Başkent 153 ve Acil Bildir
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -423,7 +475,9 @@ class HomepageScreen extends StatelessWidget {
                     color: Colors.orange.shade700,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const Baskent153Screen()),
+                      MaterialPageRoute(
+                        builder: (context) => const Baskent153Screen(),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -433,7 +487,9 @@ class HomepageScreen extends StatelessWidget {
                     color: Colors.red.shade700,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const EmergencyScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const EmergencyScreen(),
+                      ),
                     ),
                   ),
                 ],
