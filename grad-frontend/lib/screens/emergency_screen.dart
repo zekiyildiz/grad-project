@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart'; // Konum paketi
 import 'manual_address_screen.dart';
 
 class EmergencyScreen extends StatefulWidget {
@@ -10,8 +11,6 @@ class EmergencyScreen extends StatefulWidget {
 
 class _EmergencyScreenState extends State<EmergencyScreen> {
   bool _isLoading = false;
-
-  // "Diğer" seçeneği için açıklama metnini tutan kontrolcü
   final TextEditingController _descriptionController = TextEditingController();
 
   @override
@@ -21,37 +20,90 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
   }
 
   final List<Map<String, dynamic>> _emergencyTypes = [
-    {
-      'title': 'Yangın İhbar',
-      'icon': Icons.local_fire_department,
-      'color': Colors.red,
-    },
+    {'title': 'Yangın İhbar', 'icon': Icons.local_fire_department, 'color': Colors.red},
     {'title': 'Gaz Kaçağı', 'icon': Icons.gas_meter, 'color': Colors.orange},
     {'title': 'Su Patlağı', 'icon': Icons.water_drop, 'color': Colors.blue},
-    {
-      'title': 'Elektrik Arıza',
-      'icon': Icons.bolt,
-      'color': Colors.yellow.shade800,
-    },
+    {'title': 'Elektrik Arıza', 'icon': Icons.bolt, 'color': Colors.yellow.shade800},
     {'title': 'Yol Çökmesi', 'icon': Icons.add_road, 'color': Colors.brown},
     {'title': 'Diğer', 'icon': Icons.report_problem, 'color': Colors.blueGrey},
   ];
 
-  void _showLocationDialog(String title) {
-    // Her açılışta açıklama kutusunu temizle
-    _descriptionController.clear();
+  // --- 1. OTOMATİK KONUM ALMA VE GÖNDERME FONKSİYONU ---
+  Future<void> _getCurrentLocationAndSend(String title) async {
+    setState(() => _isLoading = true); // Yükleme ekranını göster
 
-    // "Diğer" seçeneği mi kontrol et?
+    try {
+      // Konum izinlerini kontrol et
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Konum izni reddedildi.';
+        }
+      }
+
+      // Gerçek GPS koordinatlarını al
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Koordinatları String formatına çevir
+      String coords = "Enlem: ${position.latitude.toStringAsFixed(4)}, Boylam: ${position.longitude.toStringAsFixed(4)}";
+
+      // Başarı diyaloğunu göster
+      _simulateSubmission(title, coords);
+
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  // --- 2. GÖNDERİM SİMÜLASYONU (BAŞARI DİALOĞU) ---
+  Future<void> _simulateSubmission(String type, String locationInfo) async {
+    // Sunucuya gönderiliyormuş gibi kısa bir gecikme
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: const Icon(Icons.check_circle, size: 60, color: Colors.green),
+        title: const Text("İhbar İletildi!"),
+        content: Text(
+          "$type bildiriminiz şu konumla birlikte ekiplere gönderildi:\n\n$locationInfo",
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Dialogu kapat
+              Navigator.pop(context); // Ana sayfaya dön
+            },
+            child: const Text("Tamam", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLocationDialog(String title) {
+    _descriptionController.clear();
     bool isOtherOption = (title == 'Diğer');
 
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
-        // Dialog içinde ekranı güncellemek için StatefulBuilder şart
         builder: (context, setDialogState) {
           return AlertDialog(
             titlePadding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
             title: Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
@@ -66,176 +118,85 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        isOtherOption
-                            ? Icons.edit_note
-                            : Icons.notifications_active,
-                        color: Colors.red,
-                      ),
+                      Icon(isOtherOption ? Icons.edit_note : Icons.notifications_active, color: Colors.red),
                       const SizedBox(width: 10),
-                      Text(
-                        isOtherOption ? "Acil Durum Tanımı" : "$title",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Text(isOtherOption ? "Acil Durum Tanımı" : title,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.grey),
                     onPressed: () => Navigator.pop(ctx),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
             ),
-
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // EĞER "DİĞER" SEÇİLDİYSE BU KISIM GÖRÜNÜR
                   if (isOtherOption) ...[
-                    const Text(
-                      "Lütfen acil durumu kısaca açıklayınız:",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
+                    const Text("Lütfen durumu açıklayın:", style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _descriptionController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        hintText: "Örn: Binadan parça düştü, Ağaç devrildi...",
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        hintText: "Örn: Yol çökmesi, devrilen ağaç...",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         filled: true,
                         fillColor: Colors.grey.shade50,
-                        contentPadding: const EdgeInsets.all(12),
                       ),
-                      onChanged: (val) {
-                        // Yazı yazıldıkça butonları aktif etmek için dialogu yenile
-                        setDialogState(() {});
-                      },
+                      onChanged: (val) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 15),
                     const Divider(),
-                    const SizedBox(height: 10),
                   ],
-
-                  const Text(
-                    "Ekiplerin size ulaşabilmesi için konum seçimi yapınız:",
-                    style: TextStyle(fontSize: 15),
-                  ),
+                  const Text("Ekiplerin size ulaşabilmesi için konum seçimi yapınız:"),
                 ],
               ),
             ),
-
-            actionsAlignment: MainAxisAlignment.center,
-            actionsPadding: const EdgeInsets.only(
-              bottom: 20,
-              left: 15,
-              right: 15,
-            ),
+            actionsPadding: const EdgeInsets.fromLTRB(15, 0, 15, 20),
             actions: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // SEÇENEK A: Anlık Konum
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      // Eğer "Diğer" ise ve yazı boşsa butonu gri yap (Disable)
-                      disabledBackgroundColor: Colors.red.shade200,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     icon: const Icon(Icons.my_location, color: Colors.white),
-                    label: const Text(
-                      "Anlık Konumumu Gönder",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    // Eğer "Diğer" seçili ve yazı boşsa tıklanamaz (null)
-                    onPressed:
-                        (isOtherOption &&
-                            _descriptionController.text.trim().isEmpty)
+                    label: const Text("Anlık Konumumu Gönder", style: TextStyle(color: Colors.white, fontSize: 16)),
+                    onPressed: (isOtherOption && _descriptionController.text.trim().isEmpty)
                         ? null
                         : () {
                             Navigator.pop(ctx);
-                            // Gönderirken başlığı güncelle: "Diğer: Ağaç Devrildi"
-                            String finalTitle = isOtherOption
-                                ? "Diğer: ${_descriptionController.text}"
-                                : title;
-                            _simulateSubmission(finalTitle, "GPS Konumu");
+                            String finalTitle = isOtherOption ? "Diğer: ${_descriptionController.text}" : title;
+                            // BURADA GERÇEK OTOMATİK KONUM FONKSİYONUNU ÇAĞIRIYORUZ
+                            _getCurrentLocationAndSend(finalTitle);
                           },
                   ),
-
                   const SizedBox(height: 10),
-
-                  // SEÇENEK B: Manuel Adres
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(
-                        color:
-                            (isOtherOption &&
-                                _descriptionController.text.trim().isEmpty)
-                            ? Colors.grey.shade300
-                            : Colors.red.shade200,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                      side: BorderSide(color: Colors.red.shade200),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    icon: Icon(
-                      Icons.map,
-                      color:
-                          (isOtherOption &&
-                              _descriptionController.text.trim().isEmpty)
-                          ? Colors.grey
-                          : Colors.red,
-                    ),
-                    label: Text(
-                      "Adres Gir / Haritadan Seç",
-                      style: TextStyle(
-                        color:
-                            (isOtherOption &&
-                                _descriptionController.text.trim().isEmpty)
-                            ? Colors.grey
-                            : Colors.red,
-                        fontSize: 16,
-                      ),
-                    ),
-                    // Eğer "Diğer" seçili ve yazı boşsa tıklanamaz (null)
-                    onPressed:
-                        (isOtherOption &&
-                            _descriptionController.text.trim().isEmpty)
+                    icon: const Icon(Icons.map, color: Colors.red),
+                    label: const Text("Adres Gir / Haritadan Seç", style: TextStyle(color: Colors.red, fontSize: 16)),
+                    onPressed: (isOtherOption && _descriptionController.text.trim().isEmpty)
                         ? null
                         : () {
                             Navigator.pop(ctx);
-
-                            String finalTitle = isOtherOption
-                                ? "Diğer: ${_descriptionController.text}"
-                                : title;
-
+                            String finalTitle = isOtherOption ? "Diğer: ${_descriptionController.text}" : title;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ManualAddressScreen(
-                                  emergencyType: finalTitle,
-                                ),
+                                builder: (context) => ManualAddressScreen(emergencyType: finalTitle),
                               ),
                             );
                           },
@@ -249,35 +210,6 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     );
   }
 
-  Future<void> _simulateSubmission(String type, String locationType) async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.check_circle, size: 60, color: Colors.green),
-        title: const Text("İhbar İletildi!"),
-        content: Text(
-          "$type bildiriminiz konumunuzla birlikte ekiplere gönderildi.",
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: const Text("Tamam", style: TextStyle(fontSize: 18)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -287,16 +219,14 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
         foregroundColor: Colors.white,
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.red),
-                  SizedBox(height: 20),
-                  Text(
-                    "Konumunuz Alınıyor...",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  const CircularProgressIndicator(color: Colors.red),
+                  const SizedBox(height: 20),
+                  const Text("Konumunuz Alınıyor...",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               ),
             )
@@ -315,11 +245,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                       children: [
                         Icon(Icons.info_outline, color: Colors.red),
                         SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            "Lütfen sadece acil müdahale gerektiren durumları seçiniz.",
-                          ),
-                        ),
+                        Expanded(child: Text("Lütfen sadece acil müdahale gerektiren durumları seçiniz.")),
                       ],
                     ),
                   ),
@@ -327,13 +253,12 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                   Expanded(
                     child: GridView.builder(
                       itemCount: _emergencyTypes.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 15,
-                            mainAxisSpacing: 15,
-                            childAspectRatio: 1.1,
-                          ),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 15,
+                        mainAxisSpacing: 15,
+                        childAspectRatio: 1.1,
+                      ),
                       itemBuilder: (context, index) {
                         final item = _emergencyTypes[index];
                         return _buildEmergencyCard(
@@ -350,11 +275,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     );
   }
 
-  Widget _buildEmergencyCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-  }) {
+  Widget _buildEmergencyCard({required String title, required IconData icon, required Color color}) {
     return InkWell(
       onTap: () => _showLocationDialog(title),
       borderRadius: BorderRadius.circular(15),
@@ -364,11 +285,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: color.withOpacity(0.3), width: 2),
           boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
+            BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5, offset: const Offset(0, 3)),
           ],
         ),
         child: Column(
@@ -380,15 +297,9 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
               child: Icon(icon, size: 35, color: color),
             ),
             const SizedBox(height: 15),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade800,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            Text(title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center),
           ],
         ),
       ),

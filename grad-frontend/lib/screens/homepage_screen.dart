@@ -471,7 +471,7 @@ class HomepageScreen extends StatelessWidget {
           // 2. ALT KISIM: Sabit butonlar
           const Divider(height: 1),
           Container(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 30),
             color: Theme.of(context).scaffoldBackgroundColor,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -485,7 +485,7 @@ class HomepageScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => const Baskent153Screen()),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 _buildBottomActionCard(
                   icon: Icons.warning_amber,
                   label: 'Acil Bildir',
