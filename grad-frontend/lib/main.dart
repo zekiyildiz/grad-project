@@ -91,7 +91,10 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
   }
 
   Widget _buildHomeScreen(AuthProvider authProvider) {
-    switch (authProvider.state) {
+    // --- GEÇİCİ TASARIM MODU: Sadece bu satırı ekle ---
+    return const HomepageScreen(); 
+    // ------------------------------------------------
+  /*  switch (authProvider.state) {
       case AuthState.initial:
       case AuthState.loading:
         // Yükleniyor Ekranı
@@ -135,5 +138,6 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
         _loginScreen ??= const LoginScreen();
         return _loginScreen!;
     }
-  }
+  }*/
 }
+} 

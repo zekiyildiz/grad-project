@@ -13,145 +13,90 @@ class Badge {
 
 // Simüle Edilen Rozet Listesi
 const List<Badge> dummyBadges = [
-  Badge(
-    'İlk Adım',
-    'İlk şikayet raporunuzu başarıyla gönderdiniz.',
-    Icons.star,
-    true, // Kazanıldı
-    Colors.amber,
-  ),
-  Badge(
-    'Mahalle Gözcüsü',
-    'Toplam 5 sorunu başarıyla bildirdiniz.',
-    Icons.visibility,
-    true, // Kazanıldı
-    Colors.green,
-  ),
-  Badge(
-    'Çözüm Elçisi',
-    'Bildirdiğiniz 10 sorun başarıyla çözüldü.',
-    Icons.check_circle,
-    false, // Henüz kazanılmadı
-    Colors.grey,
-  ),
-  Badge(
-    'Katılımcı Vatandaş',
-    '3 farklı ankete/öneriye katkıda bulundunuz.',
-    Icons.poll,
-    true, // Kazanıldı
-    Colors.blue,
-  ),
-  Badge(
-    'Uzman Gözlemci',
-    'Farklı kategorilerde 20 sorun bildirin.',
-    Icons.workspace_premium,
-    false, // Henüz kazanılmadı
-    Colors.brown,
-  ),
+  Badge('İlk Adım', 'İlk şikayet raporunuzu başarıyla gönderdiniz.', Icons.star, true, Colors.amber),
+  Badge('Mahalle Gözcüsü', 'Toplam 5 sorunu başarıyla bildirdiniz.', Icons.visibility, true, Colors.green),
+  Badge('Çözüm Elçisi', 'Bildirdiğiniz 10 sorun başarıyla çözüldü.', Icons.check_circle, false, Colors.grey),
+  Badge('Katılımcı Vatandaş', '3 farklı ankete/öneriye katkıda bulundunuz.', Icons.poll, true, Colors.blue),
+  Badge('Uzman Gözlemci', 'Farklı kategorilerde 20 sorun bildirin.', Icons.workspace_premium, false, Colors.brown),
 ];
 
-// Performans ve Rozetler Ekranı
 class PerformanceScreen extends StatelessWidget {
   const PerformanceScreen({Key? key}) : super(key: key);
 
-  // Sabit Renkler
-  static const Color accentPurple = Color(0xFF9C27B0);
   static const Color primaryBlue = Color(0xFF4094FF);
 
-  // Puan ve Seviye Başlık Alanını Oluşturan Widget
-  Widget _buildPerformanceHeader(BuildContext context, int currentPoints, int currentLevel, double progressToNextLevel) {
+  // PUAN ALANI - Sadece Puan ve Açıklama
+  Widget _buildPointsHeader(int currentPoints) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
-        color: primaryBlue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: primaryBlue.withOpacity(0.3)),
+        gradient: LinearGradient(
+          colors: [primaryBlue, primaryBlue.withOpacity(0.8)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(25),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Genel Performans Puanınız',
-            style: TextStyle(fontSize: 16, color: Colors.black54),
+            'Toplam Performans Puanınız',
+            style: TextStyle(fontSize: 16, color: Colors.white70, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 5),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$currentPoints Puan',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryBlue),
-              ),
-              Chip(
-                // Burada 'const' Text OLAMAZ çünkü currentLevel parametreden geliyor.
-                label: Text('Seviye $currentLevel', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                backgroundColor: accentPurple,
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          
-          // Seviye İlerleme Çubuğu
-          const Text( // Buradaki Text const olabilir çünkü içindeki metin sabit
-             'Bir sonraki seviyeye kalan ilerleme',
-             style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-          const SizedBox(height: 5),
-          LinearProgressIndicator(
-            value: progressToNextLevel,
-            backgroundColor: Colors.grey.shade300,
-            color: Colors.green, // İlerleme rengi
-            minHeight: 10,
-            borderRadius: BorderRadius.circular(5),
-          ),
-          
-          const SizedBox(height: 5),
+          const SizedBox(height: 10),
           Text(
-            '${(progressToNextLevel * 100).toStringAsFixed(0)}%',
-            textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
+            '$currentPoints',
+            style: const TextStyle(fontSize: 56, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Şehriniz için değer üretiyorsunuz!',
+              style: TextStyle(color: Colors.white, fontSize: 13),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Tek bir Rozet Kartını Oluşturan Widget
+  // ROZET KARTI
   Widget _buildBadgeCard(Badge badge) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Stack(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: badge.color.withOpacity(badge.unlocked ? 0.3 : 0.1),
-              child: Icon(
-                badge.icon,
-                size: 30,
-                color: badge.unlocked ? badge.color : Colors.grey.shade400,
-              ),
+        Container(
+          width: 75,
+          height: 75,
+          decoration: BoxDecoration(
+            color: badge.unlocked ? badge.color.withOpacity(0.12) : Colors.grey.shade100,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: badge.unlocked ? badge.color : Colors.grey.shade300,
+              width: 2.5,
             ),
-            if (!badge.unlocked)
-              const Positioned(
-                bottom: 0,
-                right: 0,
-                child: Icon(Icons.lock, color: Colors.black54, size: 18),
-              ),
-          ],
+          ),
+          child: Icon(
+            badge.unlocked ? badge.icon : Icons.lock_outline,
+            size: 32,
+            color: badge.unlocked ? badge.color : Colors.grey.shade400,
+          ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 12),
         Text(
           badge.name,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-            color: badge.unlocked ? Colors.black87 : Colors.grey,
+            fontWeight: badge.unlocked ? FontWeight.bold : FontWeight.normal,
+            fontSize: 13,
+            color: badge.unlocked ? Colors.black87 : Colors.grey.shade600,
           ),
-        ),
-        Tooltip(
-          message: badge.description,
-          child: Icon(Icons.info_outline, size: 12, color: Colors.grey.shade400),
         ),
       ],
     );
@@ -159,77 +104,43 @@ class PerformanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // DÜZELTME BURADA: 'const' yerine 'final' kullanıyoruz.
-    // Bu, "Invalid constant value" hatasını kesin olarak çözer.
     final int currentPoints = 850;
-    final int currentLevel = 4;
-    final double progressToNextLevel = 0.65;
-    
-    // Rozet sayılarının hesaplanması
-    final int unlockedCount = dummyBadges.where((b) => b.unlocked).length;
-    final int totalCount = dummyBadges.length;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Performans ve Rozetler', style: TextStyle(color: Colors.white)),
         backgroundColor: primaryBlue,
         iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. GENEL PERFORMANS (Puan ve Seviye)
-            _buildPerformanceHeader(context, currentPoints, currentLevel, progressToNextLevel),
-            const SizedBox(height: 30),
+            _buildPointsHeader(currentPoints),
+            
+            const SizedBox(height: 40),
 
-            // 2. ROZETLER BAŞLIĞI
-            Text(
-              'Kazanılan Rozetler ($unlockedCount/$totalCount)',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryBlue),
+            const Text(
+              'Rozet Koleksiyonunuz',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
-            const Divider(height: 15, thickness: 1),
+            const SizedBox(height: 24),
 
-            // 3. ROZETLER LISTESI
             GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 0.8,
+                crossAxisSpacing: 20,
+                mainAxisSpacing: 30,
+                childAspectRatio: 0.75,
               ),
-              itemCount: totalCount,
+              itemCount: dummyBadges.length,
               itemBuilder: (context, index) {
                 return _buildBadgeCard(dummyBadges[index]);
               },
-            ),
-            
-            const SizedBox(height: 30),
-            
-            // 4. LİDERLİK TABLOSU BUTONU
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  print('Liderlik Tablosu açılıyor');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentPurple,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                icon: const Icon(Icons.leaderboard),
-                label: const Text(
-                  'Liderlik Tablosunu Gör',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
             ),
           ],
         ),

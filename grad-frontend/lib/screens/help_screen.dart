@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'contact_screen.dart';
 
 // Soru-Cevap Veri Modeli
 class FAQItem {
@@ -80,32 +81,48 @@ class HelpScreen extends StatelessWidget {
               );
             }).toList(),
             
-            const Divider(height: 30),
+            // ... Soru-Cevap Listesi bittikten sonra ...
 
-            // Canlı Destek Alanına Yönlendirme
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Sorununuzu Çözemediniz mi?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red.shade700),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // İletişim sayfasına yönlendirme (ContactScreen)
-                  Navigator.pushNamed(context, '/contact'); // Rota adıyla yönlendirme örneği
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                icon: const Icon(Icons.support_agent),
-                label: const Text('Canlı Destek ve İletişim Kanalları', style: TextStyle(fontSize: 16)),
-              ),
-            ),
+const Divider(height: 40, thickness: 1, indent: 20, endIndent: 20),
+
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.center, // Ortalamak daha şık durur
+    children: [
+      const Text(
+        'Hâlâ yardıma mı ihtiyacınız var?',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+      ),
+      const SizedBox(height: 8),
+      const Text(
+        'Aklınıza takılan diğer konular için bize yazılı olarak ulaşabilirsiniz.',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 13, color: Colors.grey),
+      ),
+      const SizedBox(height: 20),
+      // HelpScreen içindeki butonun olduğu yer
+ElevatedButton.icon(
+  onPressed: () {
+    // Mevcut olan ContactScreen'e yönlendiriyoruz
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ContactScreen()),
+    );
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.blue,
+    foregroundColor: Colors.white,
+    minimumSize: const Size(double.infinity, 50),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  ),
+  icon: const Icon(Icons.support_agent), // İkonu istersen Icons.contact_support yapabilirsin
+  label: const Text('İletişim Kanallarını Gör', style: TextStyle(fontSize: 16)),
+),
+      const SizedBox(height: 30),
+    ],
+  ),
+),
           ],
         ),
       ),

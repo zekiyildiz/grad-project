@@ -366,138 +366,139 @@ class HomepageScreen extends StatelessWidget {
         ),
       ),
 
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              height: 200,
-              margin: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 5,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-                color: Colors.black54,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.asset(
-                  'assets/images/yesilcam_geceleri.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Center(
-                    child: Text(
-                      'DUYURU AFİŞİ\n(assets/images/yesilcam_geceleri.jpg\nklasörünü kontrol edin)',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ComplaintScreen(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentPurple,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 60),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  elevation: 5,
-                ),
-                icon: const Icon(Icons.add_a_photo, size: 28),
-                label: const Text(
-                  'Şikayet/Durum Bildir',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.start,
+     body: Column(
+        children: [
+          // 1. ÜST KISIM: Kaydırılabilir içerik
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
                 children: [
-                  _buildQuickActionButton(
-                    context,
-                    Icons.notifications_active,
-                    'Bildirimler',
-                    const NotificationScreen(),
-                    badgeCount: 2,
-                  ),
-                  _buildQuickActionButton(
-                    context,
-                    Icons.calendar_month,
-                    'Etkinlik Takvimi',
-                    const EventsScreen(),
-                  ),
-                  _buildQuickActionButton(
-                    context,
-                    Icons.lightbulb_outline,
-                    'Öneri/\nAnket',
-                    const SurveyScreen(),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 30),
-            const Divider(height: 1, indent: 16, endIndent: 16),
-            const SizedBox(height: 10),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildBottomActionCard(
-                    icon: Icons.info_outline,
-                    label: 'Başkent 153',
-                    color: Colors.orange.shade700,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const Baskent153Screen(),
+                  // Duyuru Afişi
+                  Container(
+                    height: 180,
+                    margin: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 5,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                      color: Colors.black54,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'assets/images/yesilcam_geceleri.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Center(
+                          child: Text(
+                            'DUYURU AFİŞİ\n(Görsel Yüklenemedi)',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  _buildBottomActionCard(
-                    icon: Icons.warning_amber,
-                    label: 'Acil Bildir',
-                    color: Colors.red.shade700,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EmergencyScreen(),
+
+                  const SizedBox(height: 10),
+
+                  // Şikayet Bildir Butonu
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ComplaintScreen()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentPurple,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 60),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: 5,
+                      ),
+                      icon: const Icon(Icons.add_a_photo, size: 28),
+                      label: const Text(
+                        'Şikayet/Durum Bildir',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 30),
+
+                  // 6'lı Hızlı Erişim Butonları
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildQuickActionButton(context, Icons.notifications_active, 'Bildirimler', const NotificationScreen(), badgeCount: 2),
+                            _buildQuickActionButton(context, Icons.calendar_month, 'Etkinlik\nTakvimi', const EventsScreen()),
+                            _buildQuickActionButton(context, Icons.lightbulb_outline, 'Öneri/\nAnket', const SurveyScreen()),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildQuickActionButton(context, Icons.history, 'Şikayet\nGeçmişim', const HistoryScreen()),
+                            _buildQuickActionButton(context, Icons.emoji_events, 'Performans', const PerformanceScreen()),
+                            _buildQuickActionButton(context, Icons.settings, 'Ayarlar', const SettingsScreen()),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          ),
+
+          // 2. ALT KISIM: Sabit butonlar
+          const Divider(height: 1),
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildBottomActionCard(
+                  icon: Icons.info_outline,
+                  label: 'Başkent 153',
+                  color: Colors.orange.shade700,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const Baskent153Screen()),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                _buildBottomActionCard(
+                  icon: Icons.warning_amber,
+                  label: 'Acil Bildir',
+                  color: Colors.red.shade700,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const EmergencyScreen()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
