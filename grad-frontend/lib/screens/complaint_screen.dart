@@ -8,6 +8,8 @@ import '../services/vision_service.dart';
 import '../services/report_service.dart';
 import '../providers/theme_provider.dart';
 import 'confirmation_screen.dart';
+import 'location_picker_screen.dart';
+import 'package:latlong2/latlong.dart';
 
 class ComplaintScreen extends StatefulWidget {
   const ComplaintScreen({Key? key}) : super(key: key);
@@ -35,10 +37,13 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
   bool _isAiSelected = false; // Kategori AI tarafından mı seçildi?
 
   // Konum Değişkenleri
+  // Konum Değişkenleri
   String _currentAddress = 'Konum alınıyor...';
   Position? _currentPosition;
+  LatLng? _manualPosition; // YENİ: Haritadan seçilen konum
   bool _gettingLocation = true;
-
+  bool _isManualLocation = false; // YENİ: Manuel konum seçildi mi?
+  
   @override
   void initState() {
     super.initState();
@@ -132,6 +137,80 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
       _currentAddress = message;
       _gettingLocation = false;
     });
+  }
+
+  // --- YENİ: HARİTADAN KONUM SEÇME ---
+  Future<void> _pickLocationFromMap() async {
+    // Başlangıç konumu için mevcut konumu veya Ankara merkez kullan
+    LatLng startPos = _currentPosition != null
+        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+        : const LatLng(39.9334, 32.8597); // Ankara
+        
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPickerScreen(initialPosition: startPos),
+      ),
+    );
+
+    if (result != null && result is Map) {
+      LatLng newPos = result['position'];
+      String addressDesc = result['address'];
+      
+      setState(() {
+        _gettingLocation = true;
+        _isManualLocation = true;
+        _manualPosition = newPos;
+        _currentPosition = Position(
+          longitude: newPos.longitude,
+          latitude: newPos.latitude,
+          timestamp: DateTime.now(),
+          accuracy: 100,
+          altitude: 0,
+          heading: 0,
+          speed: 0,
+          speedAccuracy: 0,
+          altitudeAccuracy: 0,
+          headingAccuracy: 0,
+        );
+      });
+
+      // Seçilen konumu adrese çevirmeyi dene
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          newPos.latitude,
+          newPos.longitude,
+        );
+
+        if (placemarks.isNotEmpty && mounted) {
+          Placemark place = placemarks[0];
+          setState(() {
+            _currentAddress = '${place.thoroughfare ?? ''} ${place.subLocality ?? ''}, ${place.administrativeArea ?? ''}';
+            
+            // Eğer kullanıcı açıklama girdiyse sonuna ekle
+            if (addressDesc.isNotEmpty) {
+              _currentAddress += ' ($addressDesc)';
+            }
+            
+            if (_currentAddress.trim().length < 5 && addressDesc.isEmpty) {
+              _currentAddress = '${newPos.latitude.toStringAsFixed(4)}, ${newPos.longitude.toStringAsFixed(4)}';
+            } else if (_currentAddress.trim().length < 5 && addressDesc.isNotEmpty) {
+               _currentAddress = addressDesc;
+            }
+            _gettingLocation = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _currentAddress = addressDesc.isNotEmpty 
+                ? addressDesc 
+                : '${newPos.latitude.toStringAsFixed(4)}, ${newPos.longitude.toStringAsFixed(4)}';
+            _gettingLocation = false;
+          });
+        }
+      }
+    }
   }
 
   // --- 2. YAPAY ZEKA ETİKET EŞLEŞTİRME ---
@@ -455,6 +534,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
                 const Icon(Icons.location_on, color: Colors.red),
                 const SizedBox(width: 8),
                 Expanded(
+                  flex: 3,
                   child: _gettingLocation
                       ? const SizedBox(
                           height: 20,
@@ -464,8 +544,20 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
                       : Text(
                           _currentAddress,
                           style: TextStyle(color: Colors.grey[700]),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                 ),
+                TextButton.icon(
+                  onPressed: _pickLocationFromMap,
+                  icon: const Icon(Icons.map, size: 18),
+                  label: const Text("Haritadan Seç"),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                )
               ],
             ),
 

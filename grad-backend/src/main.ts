@@ -5,8 +5,8 @@ import { initFirebase } from './config/firebase';
 
 initFirebase();
 
-const PORT = env.PORT || 3000;
+const PORT = Number(env.PORT) || 3000;
 
-app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  logger.info(`Server is running on port ${PORT} (0.0.0.0)`);
 });
