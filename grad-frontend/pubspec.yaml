@@ -53,6 +53,8 @@ dependencies:
   geocoding: ^3.0.0    # Adres çevirmek için
   flutter_map: ^8.2.2
   latlong2: any
+  url_launcher: ^6.3.2
+  carousel_slider: ^5.1.2
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +81,11 @@ flutter:
   assets:
       - assets/model/best_float32.tflite
       - assets/model/labels.txt
+
+      - assets/model/images/belediye1.png
+      - assets/model/images/belediye2.jpg
+      - assets/model/images/belediye3.jpg
+      - assets/model/images/belediye4.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

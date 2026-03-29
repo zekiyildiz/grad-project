@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart'; // PAKETİ İÇERİ ALDIK
 
-// Helper widget for drawing clean and actionable contact cards
+// Temiz ve tıklanabilir kart yapısı (Aynı Tasarım)
 class ContactCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -27,7 +28,7 @@ class ContactCard extends StatelessWidget {
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        onTap: onTap, // Tıklandığında yapılacak eylem
+        onTap: onTap,
       ),
     );
   }
@@ -36,76 +37,86 @@ class ContactCard extends StatelessWidget {
 class ContactScreen extends StatelessWidget {
   const ContactScreen({Key? key}) : super(key: key);
 
-  // Bu fonksiyonlar ileride telefon/harita uygulamalarını açmak için kullanılacaktır
-  void launchUrl(String url) {
-    // Gerçek projede 'url_launcher' paketi kullanılarak link/telefon açılır.
-    print('Aksiyon: $url açıldı');
+  // LİNK, TELEFON VEYA MAİL AÇAN ANA FONKSİYON
+  Future<void> _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        // externalApplication modu, uygulamayı (WhatsApp, Maps vb.) dışarıda açar
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint('Hata: $url adresi açılamadı.');
+      }
+    } catch (e) {
+      debugPrint('Sistem Hatası: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('İletişim ve Destek'),
+        title: const Text('İletişim ve Destek', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. İletişim Kanalları Başlığı
             const Text(
               "Bize Ulaşın (7/24 Destek)",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF343A40)),
             ),
             const SizedBox(height: 10),
 
-            // 2. İletişim Kartları
+            // 1. ÇAĞRI MERKEZİ (153)
             ContactCard(
               title: "Çağrı Merkezi (Mavi Masa)",
               subtitle: "7/24 Sorun Bildirimi ve Bilgi",
               icon: Icons.call,
               iconColor: Colors.blue,
-              onTap: () => launchUrl('tel:153'), // Örn: 153'ü arama
+              onTap: () => _launchURL('tel:153'),
             ),
+
+            // 2. E-POSTA
             ContactCard(
               title: "E-Posta (Yazılı Destek)",
               subtitle: "Geri bildirim ve detaylı sorularınız",
               icon: Icons.email,
               iconColor: Colors.green,
-              onTap: () => launchUrl('mailto:destek@belediye.gov.tr'),
+              onTap: () => _launchURL('mailto:mavi-masa@ankara.bel.tr'),
             ),
+
+            // 3. ADRES (Google Haritalar Konumu)
             ContactCard(
               title: "Merkez Adres",
-              subtitle: "Belediye binası ve ana hizmet noktası (Haritada Gör)",
+              subtitle: "Emniyet Mh. Hipodrom Cd. No:5 Yenimahalle",
               icon: Icons.location_on,
-              iconColor: Colors.grey,
-              onTap: () => launchUrl('map://belediye_adres'),
+              iconColor: Colors.red.shade400,
+              onTap: () => _launchURL('https://www.google.com/maps/search/?api=1&query=39.939318,32.839351'),
             ),
             
             const SizedBox(height: 30),
             
-            // 3. Sosyal Medya Başlığı
             const Text(
               "Bizi Takip Edin",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF343A40)),
             ),
             const SizedBox(height: 15),
 
-            // 4. Sosyal Medya İkonları (Horizontal List)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                buildSocialIcon(Icons.thumb_up, 'Facebook', Colors.blue.shade700),
-                buildSocialIcon(Icons.camera_alt, 'Instagram', Colors.purple),
-                buildSocialIcon(Icons.play_circle_fill, 'YouTube', Colors.red),
+                buildSocialIcon(Icons.facebook, 'Facebook', Colors.blue.shade700, 'https://www.facebook.com/ankarabbld'),
+                buildSocialIcon(Icons.camera_alt, 'Instagram', Colors.purple, 'https://instagram.com/ankarabbld'),
+                buildSocialIcon(Icons.play_circle_fill, 'YouTube', Colors.red, 'https://youtube.com/ankarabbld'),
               ],
             ),
 
             const SizedBox(height: 50),
             
-            // 5. Uygulama Versiyonu
             Center(
               child: Text(
                 "Akıllı Belediye Uygulaması v1.0.0 (MVP)",
@@ -118,12 +129,12 @@ class ContactScreen extends StatelessWidget {
     );
   }
 
-  // Helper function to build the clickable social icons
-  Widget buildSocialIcon(IconData icon, String label, Color color) {
+  // SOSYAL MEDYA BUTON YAPISI
+  Widget buildSocialIcon(IconData icon, String label, Color color, String url) {
     return Column(
       children: [
         InkWell(
-          onTap: () => launchUrl('social://${label.toLowerCase()}'),
+          onTap: () => _launchURL(url),
           child: CircleAvatar(
             radius: 25,
             backgroundColor: color.withOpacity(0.1),

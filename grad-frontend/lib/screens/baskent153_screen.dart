@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart'; // En üste eklendi
 
 class Baskent153Screen extends StatelessWidget {
   const Baskent153Screen({Key? key}) : super(key: key);
@@ -75,50 +76,75 @@ class Baskent153Screen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onPressed: () {
-                      // İleride url_launcher paketi ile buraya tel:153 eklenecek
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Arama başlatılıyor...")),
+                    onPressed: () async {
+                      // Arama ekranını açan yeni kod bloğumuz:
+                      final Uri launchUri = Uri(
+                        scheme: 'tel',
+                        path: '153',
                       );
+                      
+                      try {
+                        if (await canLaunchUrl(launchUri)) {
+                          await launchUrl(launchUri);
+                        } else {
+                          // Eğer emülatörde arama özelliği yoksa bu uyarı çıkar
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Arama özelliği bu cihazda desteklenmiyor.")),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint("Arama hatası: $e");
+                      }
                     },
                   ),
                 ),
+const SizedBox(height: 10), 
+               // 2. WHATSAPP HATTI
+SizedBox(
+  width: double.infinity,
+  height: 60,
+  child: OutlinedButton.icon(
+    style: OutlinedButton.styleFrom(
+      side: const BorderSide(color: Colors.green, width: 2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+    ),
+    icon: const Icon(Icons.chat, color: Colors.green, size: 28),
+    label: const Text(
+      "WhatsApp Destek",
+      style: TextStyle(
+        fontSize: 20,
+        color: Colors.green,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    onPressed: () async {
+      // WhatsApp numarasını uluslararası formatta yazıyoruz (Başkent 153 Hattı)
+      const String phoneNumber = "903121530000"; 
+      const String message = "Merhaba, bir konu hakkında bilgi almak istiyorum.";
+      
+      // WhatsApp URL formatı (wa.me)
+      final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
 
-                const SizedBox(height: 20),
-
-                // 2. WHATSAPP HATTI (Opsiyonel ama çok popüler)
-                SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.green, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    icon: const Icon(Icons.chat, color: Colors.green, size: 28),
-                    label: const Text(
-                      "WhatsApp Destek",
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("WhatsApp açılıyor...")),
-                      );
-                    },
-                  ),
-                ),
+      try {
+        if (await canLaunchUrl(whatsappUri)) {
+          await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("WhatsApp uygulaması bulunamadı.")),
+          );
+        }
+      } catch (e) {
+        debugPrint("WhatsApp hatası: $e");
+      }
+    },
+  ),
+),
+const SizedBox(height: 20), // <-- aradaki mesafe için
               ],
             ),
           ),
-
-          const Spacer(),
-
           // ALT KISIM: Footer
           Padding(
             padding: const EdgeInsets.only(bottom: 30),

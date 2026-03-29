@@ -17,6 +17,7 @@ import 'emergency_screen.dart';
 import 'performance_screen.dart'; // EKLENDİ: Performans sayfası importu
 import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
 class HomepageScreen extends StatelessWidget {
   const HomepageScreen({Key? key}) : super(key: key);
@@ -373,35 +374,54 @@ class HomepageScreen extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // Duyuru Afişi
-                  Container(
-                    height: 180,
-                    margin: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                      color: Colors.black54,
+                  // 1. ÜST KISIM: Otomatik Kayan Duyuru Afişi
+                  const SizedBox(height: 16),
+                  CarouselSlider(
+                    options: CarouselOptions(
+                      height: 180.0,
+                      autoPlay: true, // Otomatik geçişi açar
+                      autoPlayInterval: const Duration(seconds: 3), // 3 saniyede bir kayar
+                      autoPlayAnimationDuration: const Duration(milliseconds: 800), // Kayma hızı
+                      autoPlayCurve: Curves.fastOutSlowIn,
+                      pauseAutoPlayOnTouch: true, // Kullanıcı dokunduğunda durur (manuel kaydırma için)
+                      viewportFraction: 1.0, // Resmin ekranı tam kaplamasını sağlar
+                      enlargeCenterPage: false,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        'assets/images/yesilcam_geceleri.jpg',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Center(
-                          child: Text(
-                            'DUYURU AFİŞİ\n(Görsel Yüklenemedi)',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
+                    items: [
+                      'assets/model/images/belediye1.png',
+                      'assets/model/images/belediye2.jpg',
+                      'assets/model/images/belediye3.jpg',
+                      'assets/model/images/belediye4.png',
+                    ].map((i) {
+                      return Builder(
+                        builder: (BuildContext context) {
+                          return Container(
+                            width: MediaQuery.of(context).size.width,
+                            margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.asset(
+                                i, 
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Center(
+                                  child: Text('Görsel Yüklenemedi'),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    }).toList(),
                   ),
 
                   const SizedBox(height: 10),
@@ -433,8 +453,77 @@ class HomepageScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 15),
+// YENİ EKLEDİĞİMİZ YAN YANA ALAN
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  child: Row(
+    children: [
+      // SOL TARAF: HAVA DURUMU
+      Expanded(
+        child: Container(
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.blue.shade100),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.wb_sunny, color: Colors.orange, size: 30),
+              SizedBox(height: 5),
+              Text("Ankara", style: TextStyle(fontWeight: FontWeight.bold)),
+              Text("18°C", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ),
+      
+      const SizedBox(width: 12), // İki kart arasındaki boşluk
 
+      // SAĞ TARAF: HABERLER VE DUYURULAR
+      Expanded(
+        child: Container(
+          height: 100,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.campaign, color: Colors.red.shade400, size: 18),
+                  const SizedBox(width: 5),
+                  const Text("Duyurular", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                ],
+              ),
+              const Divider(height: 8),
+              const Text(
+                "• Su kesintisi duyurusu...",
+                style: TextStyle(fontSize: 11, color: Colors.black87),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Text(
+                "• Yeni park açılışı!",
+                style: TextStyle(fontSize: 11, color: Colors.black87),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+
+const SizedBox(height: 25), // 6'lı butonlarla aradaki mesafe
                   // 6'lı Hızlı Erişim Butonları
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -449,7 +538,7 @@ class HomepageScreen extends StatelessWidget {
                             _buildQuickActionButton(context, Icons.lightbulb_outline, 'Öneri/\nAnket', const SurveyScreen()),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,7 +551,7 @@ class HomepageScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
