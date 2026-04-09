@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Sadece rakam girişi için gerekli kütüphane
+import 'package:easy_localization/easy_localization.dart'; // EKLENDİ
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({Key? key}) : super(key: key);
@@ -61,10 +62,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     // Başarı mesajı göster
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Değişiklikler şimdilik yerel olarak doğrulandı! ✅ (Backend bekleniyor)',
-        ),
+      SnackBar(
+        content: Text('edit_prof_success_snack'.tr()),
         backgroundColor: Colors.green,
       ),
     );
@@ -77,7 +76,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profili Düzenle'),
+        title: Text('edit_prof_title'.tr()),
         backgroundColor: const Color(0xFF4094FF),
         foregroundColor: Colors.white,
       ),
@@ -121,7 +120,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Fotoğrafı Değiştir',
+                'edit_prof_change_photo'.tr(),
                 style: TextStyle(color: Colors.blue.shade700),
               ),
 
@@ -130,10 +129,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // --- 1. İSİM ALANI ---
               TextFormField(
                 controller: _nameController,
-                decoration: _inputDecoration('Ad Soyad', Icons.person),
+                decoration: _inputDecoration('edit_prof_name_label'.tr(), Icons.person),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Lütfen adınızı giriniz';
+                    return 'edit_prof_name_err'.tr();
                   }
                   return null; // Hata yok
                 },
@@ -144,12 +143,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: _inputDecoration('E-posta', Icons.email),
+                decoration: _inputDecoration('edit_prof_email_label'.tr(), Icons.email),
                 validator: (value) {
                   if (value == null || value.isEmpty)
-                    return 'E-posta boş olamaz';
+                    return 'edit_prof_email_err_empty'.tr();
                   if (!value.contains('@'))
-                    return 'Geçerli bir mail adresi giriniz';
+                    return 'edit_prof_email_err_invalid'.tr();
                   return null;
                 },
               ),
@@ -164,7 +163,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
 
                 decoration: InputDecoration(
-                  labelText: 'Telefon Numarası',
+                  labelText: 'edit_prof_phone_label'.tr(),
                   prefixText: '+90 ', // Başında otomatik +90 yazar, silinemez
                   prefixIcon: const Icon(Icons.phone, color: Colors.blue),
                   border: OutlineInputBorder(
@@ -177,11 +176,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                 validator: (value) {
                   if (value == null || value.isEmpty)
-                    return 'Telefon numarası giriniz';
+                    return 'edit_prof_phone_err_empty'.tr();
                   if (value.startsWith('0'))
-                    return 'Lütfen başında 0 olmadan giriniz';
+                    return 'edit_prof_phone_err_zero'.tr();
                   if (value.length != 10)
-                    return 'Numara 10 haneli olmalı (Örn: 5XX...)';
+                    return 'edit_prof_phone_err_length'.tr();
                   return null;
                 },
               ),
@@ -191,10 +190,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               TextFormField(
                 controller: _addressController,
                 maxLines: 3,
-                decoration: _inputDecoration('Adres', Icons.home),
+                decoration: _inputDecoration('edit_prof_address_label'.tr(), Icons.home),
                 validator: (value) {
                   if (value == null || value.isEmpty)
-                    return 'Adres boş bırakılamaz';
+                    return 'edit_prof_address_err_empty'.tr();
                   return null;
                 },
               ),
@@ -215,9 +214,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Değişiklikleri Kaydet',
-                          style: TextStyle(
+                      : Text(
+                          'edit_prof_save_btn'.tr(),
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,

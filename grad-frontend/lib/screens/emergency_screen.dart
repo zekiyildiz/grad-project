@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart'; // Konum paketi
+import 'package:geolocator/geolocator.dart'; 
+import 'package:easy_localization/easy_localization.dart'; 
 import 'manual_address_screen.dart';
 
 class EmergencyScreen extends StatefulWidget {
@@ -20,50 +21,43 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
   }
 
   final List<Map<String, dynamic>> _emergencyTypes = [
-    {'title': 'Yangın İhbar', 'icon': Icons.local_fire_department, 'color': Colors.red},
-    {'title': 'Gaz Kaçağı', 'icon': Icons.gas_meter, 'color': Colors.orange},
-    {'title': 'Su Patlağı', 'icon': Icons.water_drop, 'color': Colors.blue},
-    {'title': 'Elektrik Arıza', 'icon': Icons.bolt, 'color': Colors.yellow.shade800},
-    {'title': 'Yol Çökmesi', 'icon': Icons.add_road, 'color': Colors.brown},
-    {'title': 'Diğer', 'icon': Icons.report_problem, 'color': Colors.blueGrey},
+    {'titleKey': 'emerg_type_fire', 'icon': Icons.local_fire_department, 'color': Colors.red},
+    {'titleKey': 'emerg_type_gas', 'icon': Icons.gas_meter, 'color': Colors.orange},
+    {'titleKey': 'emerg_type_water', 'icon': Icons.water_drop, 'color': Colors.blue},
+    {'titleKey': 'emerg_type_elec', 'icon': Icons.bolt, 'color': Colors.yellow.shade800},
+    {'titleKey': 'emerg_type_road', 'icon': Icons.add_road, 'color': Colors.brown},
+    {'titleKey': 'emerg_type_other', 'icon': Icons.report_problem, 'color': Colors.blueGrey},
   ];
 
-  // --- 1. OTOMATİK KONUM ALMA VE GÖNDERME FONKSİYONU ---
   Future<void> _getCurrentLocationAndSend(String title) async {
-    setState(() => _isLoading = true); // Yükleme ekranını göster
+    setState(() => _isLoading = true); 
 
     try {
-      // Konum izinlerini kontrol et
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          throw 'Konum izni reddedildi.';
+          throw 'emerg_loc_denied'.tr();
         }
       }
 
-      // Gerçek GPS koordinatlarını al
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // Koordinatları String formatına çevir
-      String coords = "Enlem: ${position.latitude.toStringAsFixed(4)}, Boylam: ${position.longitude.toStringAsFixed(4)}";
+      String coords = "${'emerg_lat'.tr()}: ${position.latitude.toStringAsFixed(4)}, ${'emerg_lng'.tr()}: ${position.longitude.toStringAsFixed(4)}";
 
-      // Başarı diyaloğunu göster
       _simulateSubmission(title, coords);
 
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("${'emerg_error'.tr()}: $e"), backgroundColor: Colors.red),
       );
     }
   }
 
-  // --- 2. GÖNDERİM SİMÜLASYONU (BAŞARI DİALOĞU) ---
   Future<void> _simulateSubmission(String type, String locationInfo) async {
-    // Sunucuya gönderiliyormuş gibi kısa bir gecikme
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -74,27 +68,31 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         icon: const Icon(Icons.check_circle, size: 60, color: Colors.green),
-        title: const Text("İhbar İletildi!"),
+        title: Text('emerg_success_title'.tr()),
         content: Text(
-          "$type bildiriminiz şu konumla birlikte ekiplere gönderildi:\n\n$locationInfo",
+          "$type ${'emerg_success_desc'.tr()}\n\n$locationInfo",
           textAlign: TextAlign.center,
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(ctx); // Dialogu kapat
-              Navigator.pop(context); // Ana sayfaya dön
+              Navigator.pop(ctx); 
+              Navigator.pop(context); 
             },
-            child: const Text("Tamam", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text('emerg_ok_btn'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  void _showLocationDialog(String title) {
+  void _showLocationDialog(String titleKey) {
     _descriptionController.clear();
-    bool isOtherOption = (title == 'Diğer');
+    bool isOtherOption = (titleKey == 'emerg_type_other');
+    String translatedTitle = titleKey.tr();
+    
+    // Dialog içi karanlık mod kontrolü
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -107,7 +105,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
             title: Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: isDark ? Colors.red.withOpacity(0.2) : Colors.red.shade50,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(28),
                   topRight: Radius.circular(28),
@@ -120,7 +118,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                     children: [
                       Icon(isOtherOption ? Icons.edit_note : Icons.notifications_active, color: Colors.red),
                       const SizedBox(width: 10),
-                      Text(isOtherOption ? "Acil Durum Tanımı" : title,
+                      Text(isOtherOption ? 'emerg_dialog_title_other'.tr() : translatedTitle,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -137,23 +135,23 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (isOtherOption) ...[
-                    const Text("Lütfen durumu açıklayın:", style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('emerg_dialog_desc_label'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _descriptionController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        hintText: "Örn: Yol çökmesi, devrilen ağaç...",
+                        hintText: 'emerg_dialog_desc_hint'.tr(),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
                       ),
                       onChanged: (val) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 15),
                     const Divider(),
                   ],
-                  const Text("Ekiplerin size ulaşabilmesi için konum seçimi yapınız:"),
+                  Text('emerg_dialog_loc_label'.tr()),
                 ],
               ),
             ),
@@ -169,13 +167,12 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     icon: const Icon(Icons.my_location, color: Colors.white),
-                    label: const Text("Anlık Konumumu Gönder", style: TextStyle(color: Colors.white, fontSize: 16)),
+                    label: Text('emerg_btn_auto_loc'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16)),
                     onPressed: (isOtherOption && _descriptionController.text.trim().isEmpty)
                         ? null
                         : () {
                             Navigator.pop(ctx);
-                            String finalTitle = isOtherOption ? "Diğer: ${_descriptionController.text}" : title;
-                            // BURADA GERÇEK OTOMATİK KONUM FONKSİYONUNU ÇAĞIRIYORUZ
+                            String finalTitle = isOtherOption ? "$translatedTitle: ${_descriptionController.text}" : translatedTitle;
                             _getCurrentLocationAndSend(finalTitle);
                           },
                   ),
@@ -187,12 +184,12 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     icon: const Icon(Icons.map, color: Colors.red),
-                    label: const Text("Adres Gir / Haritadan Seç", style: TextStyle(color: Colors.red, fontSize: 16)),
+                    label: Text('emerg_btn_manual_loc'.tr(), style: const TextStyle(color: Colors.red, fontSize: 16)),
                     onPressed: (isOtherOption && _descriptionController.text.trim().isEmpty)
                         ? null
                         : () {
                             Navigator.pop(ctx);
-                            String finalTitle = isOtherOption ? "Diğer: ${_descriptionController.text}" : title;
+                            String finalTitle = isOtherOption ? "$translatedTitle: ${_descriptionController.text}" : translatedTitle;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -212,9 +209,12 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // SAYFA İÇİN KARANLIK MOD KONTROLÜ
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("ACİL DURUM BİLDİR"),
+        title: Text('emerg_title'.tr()),
         backgroundColor: Colors.red.shade700,
         foregroundColor: Colors.white,
       ),
@@ -225,8 +225,8 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                 children: [
                   const CircularProgressIndicator(color: Colors.red),
                   const SizedBox(height: 20),
-                  const Text("Konumunuz Alınıyor...",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('emerg_loc_getting'.tr(),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               ),
             )
@@ -237,15 +237,15 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
+                      color: isDark ? Colors.red.withOpacity(0.1) : Colors.red.shade50,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.red.shade200),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.red),
-                        SizedBox(width: 10),
-                        Expanded(child: Text("Lütfen sadece acil müdahale gerektiren durumları seçiniz.")),
+                        const Icon(Icons.info_outline, color: Colors.red),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text('emerg_warning_text'.tr())),
                       ],
                     ),
                   ),
@@ -262,9 +262,10 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                       itemBuilder: (context, index) {
                         final item = _emergencyTypes[index];
                         return _buildEmergencyCard(
-                          title: item['title'],
+                          titleKey: item['titleKey'],
                           icon: item['icon'],
                           color: item['color'],
+                          isDark: isDark, // Karanlık mod bilgisini karta gönderiyoruz
                         );
                       },
                     ),
@@ -275,17 +276,17 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     );
   }
 
-  Widget _buildEmergencyCard({required String title, required IconData icon, required Color color}) {
+  Widget _buildEmergencyCard({required String titleKey, required IconData icon, required Color color, required bool isDark}) {
     return InkWell(
-      onTap: () => _showLocationDialog(title),
+      onTap: () => _showLocationDialog(titleKey),
       borderRadius: BorderRadius.circular(15),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? Colors.grey.shade900 : Colors.white, // KART ARKA PLANI DÜZELTİLDİ
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: color.withOpacity(0.3), width: 2),
           boxShadow: [
-            BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5, offset: const Offset(0, 3)),
+            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 3)),
           ],
         ),
         child: Column(
@@ -297,8 +298,12 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
               child: Icon(icon, size: 35, color: color),
             ),
             const SizedBox(height: 15),
-            Text(title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(titleKey.tr(),
+                style: TextStyle(
+                  fontSize: 16, 
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87, // KART YAZI RENGİ DÜZELTİLDİ
+                ),
                 textAlign: TextAlign.center),
           ],
         ),

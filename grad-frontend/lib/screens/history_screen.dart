@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // EKLENDİ
 import '../services/report_service.dart';
 import '../providers/theme_provider.dart';
 import 'package:provider/provider.dart';
@@ -30,23 +31,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Map<String, dynamic> _getCategoryDetails(String category) {
     switch (category) {
       case 'CUKUR':
-        return {'title': 'Çukur/Asfalt', 'icon': Icons.edit_road, 'color': Colors.brown};
+        return {'title': 'hist_cat_pothole'.tr(), 'icon': Icons.edit_road, 'color': Colors.brown};
       case 'COPLUK':
-        return {'title': 'Çöp/Temizlik', 'icon': Icons.delete_outline, 'color': Colors.green};
+        return {'title': 'hist_cat_garbage'.tr(), 'icon': Icons.delete_outline, 'color': Colors.green};
       case 'KIRIK_BANK':
-        return {'title': 'Kırık Bank/Park', 'icon': Icons.park, 'color': Colors.green[800]};
+        return {'title': 'hist_cat_bench'.tr(), 'icon': Icons.park, 'color': Colors.green[800]};
       case 'TRAFIK':
-        return {'title': 'Trafik/Levha', 'icon': Icons.traffic, 'color': Colors.red};
+        return {'title': 'hist_cat_traffic'.tr(), 'icon': Icons.traffic, 'color': Colors.red};
       case 'ELEKTRIK':
-        return {'title': 'Aydınlatma/Elektrik', 'icon': Icons.lightbulb_outline, 'color': Colors.amber};
+        return {'title': 'hist_cat_electric'.tr(), 'icon': Icons.lightbulb_outline, 'color': Colors.amber};
       case 'SCOOTER':
-        return {'title': 'Scooter/Park', 'icon': Icons.electric_scooter, 'color': Colors.blue};
+        return {'title': 'hist_cat_scooter'.tr(), 'icon': Icons.electric_scooter, 'color': Colors.blue};
       case 'POSTER':
-        return {'title': 'Afiş/Grafiti', 'icon': Icons.format_paint, 'color': Colors.purple};
+        return {'title': 'hist_cat_poster'.tr(), 'icon': Icons.format_paint, 'color': Colors.purple};
       case 'AGAC':
-        return {'title': 'Ağaç/Peyzaj', 'icon': Icons.nature, 'color': Colors.teal};
+        return {'title': 'hist_cat_tree'.tr(), 'icon': Icons.nature, 'color': Colors.teal};
       default:
-        return {'title': 'Diğer', 'icon': Icons.report_problem, 'color': Colors.grey};
+        return {'title': 'hist_cat_other'.tr(), 'icon': Icons.report_problem, 'color': Colors.grey};
     }
   }
 
@@ -54,13 +55,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Map<String, dynamic> _getStatusDetails(String status) {
     switch (status) {
       case 'PENDING':
-        return {'label': 'YENİ', 'color': Colors.blue};
+        return {'label': 'hist_stat_new'.tr(), 'color': Colors.blue};
       case 'IN_PROGRESS':
-        return {'label': 'İŞLEMDE', 'color': Colors.orange};
+        return {'label': 'hist_stat_in_progress'.tr(), 'color': Colors.orange};
       case 'RESOLVED':
-        return {'label': 'TAMAMLANDI', 'color': Colors.green};
+        return {'label': 'hist_stat_completed'.tr(), 'color': Colors.green};
       case 'REJECTED':
-        return {'label': 'REDDEDİLDİ', 'color': Colors.red};
+        return {'label': 'hist_stat_rejected'.tr(), 'color': Colors.red};
       default:
         return {'label': status, 'color': Colors.grey};
     }
@@ -68,11 +69,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Provider.of<ThemeProvider>(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Şikayet Geçmişim'),
+        title: Text('history_title'.tr()),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
@@ -94,25 +93,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 children: [
                   const Icon(Icons.error_outline, size: 60, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Bir hata oluştu:\n${snapshot.error}', textAlign: TextAlign.center),
+                  Text('hist_error'.tr(args: [snapshot.error.toString()]), textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _fetchReports,
-                    child: const Text('Tekrar Dene'),
+                    child: Text('hist_retry'.tr()),
                   )
                 ],
               ),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.inbox, size: 60, color: Colors.grey),
-                  SizedBox(height: 16),
+                  const Icon(Icons.inbox, size: 60, color: Colors.grey),
+                  const SizedBox(height: 16),
                   Text(
-                    'Henüz hiç şikayet/ihbar kaydınız bulunmuyor.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    'hist_empty'.tr(),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
@@ -140,14 +139,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
               final statusDetails = _getStatusDetails(statusStr);
               
               final locationData = report['location'];
-              String address = 'Adres belirtilmemiş';
+              String address = 'hist_no_address'.tr();
               
               if (locationData is Map<String, dynamic>) {
-                // Önce address alanını dene
                 if (locationData['address'] != null && locationData['address'].toString().trim().isNotEmpty) {
                   address = locationData['address'].toString();
                 }
-                // Adres yoksa lat/lng koordinatlarını göster
                 else if (locationData['latitude'] != null && locationData['longitude'] != null) {
                   address = '📍 ${double.tryParse(locationData['latitude'].toString())?.toStringAsFixed(4) ?? '?'}, ${double.tryParse(locationData['longitude'].toString())?.toStringAsFixed(4) ?? '?'}';
                 }
@@ -155,7 +152,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 address = locationData;
               }
               
-              // Tarih formatlama
               String dateStr = '';
               if (report['createdAt'] != null) {
                 try {

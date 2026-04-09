@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:easy_localization/easy_localization.dart'; 
 
 class LocationPickerScreen extends StatefulWidget {
   final LatLng initialPosition;
@@ -36,9 +37,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. KARANLIK MOD KONTROLÜ
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Konum Seç"),
+        title: Text('loc_picker_title'.tr()),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
@@ -86,12 +90,18 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      // 2. İPUCU KUTUSU ARKA PLANI
+                      color: isDark ? Colors.black.withOpacity(0.8) : Colors.white.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      "Haritaya dokunarak ihbar konumunu işaretleyin",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    child: Text(
+                      'loc_picker_hint'.tr(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 12,
+                        // 3. İPUCU YAZI RENGİ
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
                     ),
                   ),
                 ),
@@ -102,23 +112,25 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           // 2. ONAY ALANI
           Container(
             padding: const EdgeInsets.all(20),
-            color: Colors.white,
+            // 4. ALT ALANIN GENEL ARKA PLANI (Temadan otomatik alır)
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min, // Ekranın altına yaslansın
+                mainAxisSize: MainAxisSize.min, 
                 children: [
-                  const Text("Açık Adres / Tarif (İsteğe Bağlı):", 
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('loc_picker_address_label'.tr(), 
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _addressController,
                     maxLines: 2,
                     decoration: InputDecoration(
-                      hintText: "Örn: Parkın giriş kapısı...",
+                      hintText: 'loc_picker_address_hint'.tr(),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      // 5. TEXTFIELD İÇİ ARKA PLAN RENGİ
+                      fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
                     ),
                   ),
                   const SizedBox(height: 15),
@@ -132,8 +144,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       ),
                       onPressed: _confirmLocation,
                       icon: const Icon(Icons.check, color: Colors.white),
-                      label: const Text("KONUMU ONAYLA", 
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      label: Text('loc_picker_confirm_btn'.tr(), 
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; // PAKETİ İÇERİ ALDIK
+import 'package:url_launcher/url_launcher.dart'; 
+import 'package:easy_localization/easy_localization.dart'; 
 
-// Temiz ve tıklanabilir kart yapısı (Aynı Tasarım)
 class ContactCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -20,13 +20,26 @@ class ContactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 1,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
+      // Karanlık mod uyumlu kart rengi
+      color: isDark ? Colors.grey.shade900 : Colors.white,
       child: ListTile(
         leading: Icon(icon, color: iconColor, size: 30),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
+        title: Text(
+          title, 
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+        ),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: onTap,
       ),
@@ -37,12 +50,10 @@ class ContactCard extends StatelessWidget {
 class ContactScreen extends StatelessWidget {
   const ContactScreen({Key? key}) : super(key: key);
 
-  // LİNK, TELEFON VEYA MAİL AÇAN ANA FONKSİYON
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     try {
       if (await canLaunchUrl(uri)) {
-        // externalApplication modu, uygulamayı (WhatsApp, Maps vb.) dışarıda açar
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         debugPrint('Hata: $url adresi açılamadı.');
@@ -54,9 +65,11 @@ class ContactScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('İletişim ve Destek', style: TextStyle(color: Colors.white)),
+        title: Text('contact_title'.tr(), style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -65,34 +78,36 @@ class ContactScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Bize Ulaşın (7/24 Destek)",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF343A40)),
+            Text(
+              'contact_reach_us'.tr(),
+              style: TextStyle(
+                fontSize: 18, 
+                fontWeight: FontWeight.bold, 
+                // Karanlık moda özel başlık rengi
+                color: isDark ? Colors.white : const Color(0xFF343A40)
+              ),
             ),
             const SizedBox(height: 10),
 
-            // 1. ÇAĞRI MERKEZİ (153)
             ContactCard(
-              title: "Çağrı Merkezi (Mavi Masa)",
-              subtitle: "7/24 Sorun Bildirimi ve Bilgi",
+              title: 'contact_call_center'.tr(),
+              subtitle: 'contact_call_desc'.tr(),
               icon: Icons.call,
               iconColor: Colors.blue,
               onTap: () => _launchURL('tel:153'),
             ),
 
-            // 2. E-POSTA
             ContactCard(
-              title: "E-Posta (Yazılı Destek)",
-              subtitle: "Geri bildirim ve detaylı sorularınız",
+              title: 'contact_email'.tr(),
+              subtitle: 'contact_email_desc'.tr(),
               icon: Icons.email,
               iconColor: Colors.green,
               onTap: () => _launchURL('mailto:mavi-masa@ankara.bel.tr'),
             ),
 
-            // 3. ADRES (Google Haritalar Konumu)
             ContactCard(
-              title: "Merkez Adres",
-              subtitle: "Emniyet Mh. Hipodrom Cd. No:5 Yenimahalle",
+              title: 'contact_address'.tr(),
+              subtitle: 'contact_address_desc'.tr(),
               icon: Icons.location_on,
               iconColor: Colors.red.shade400,
               onTap: () => _launchURL('https://www.google.com/maps/search/?api=1&query=39.939318,32.839351'),
@@ -100,18 +115,22 @@ class ContactScreen extends StatelessWidget {
             
             const SizedBox(height: 30),
             
-            const Text(
-              "Bizi Takip Edin",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF343A40)),
+            Text(
+              'contact_follow_us'.tr(),
+              style: TextStyle(
+                fontSize: 18, 
+                fontWeight: FontWeight.bold, 
+                color: isDark ? Colors.white : const Color(0xFF343A40)
+              ),
             ),
             const SizedBox(height: 15),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                buildSocialIcon(Icons.facebook, 'Facebook', Colors.blue.shade700, 'https://www.facebook.com/ankarabbld'),
-                buildSocialIcon(Icons.camera_alt, 'Instagram', Colors.purple, 'https://instagram.com/ankarabbld'),
-                buildSocialIcon(Icons.play_circle_fill, 'YouTube', Colors.red, 'https://youtube.com/ankarabbld'),
+                buildSocialIcon(Icons.facebook, 'Facebook', Colors.blue.shade700, 'https://www.facebook.com/ankarabbld', isDark),
+                buildSocialIcon(Icons.camera_alt, 'Instagram', Colors.purple, 'https://instagram.com/ankarabbld', isDark),
+                buildSocialIcon(Icons.play_circle_fill, 'YouTube', Colors.red, 'https://youtube.com/ankarabbld', isDark),
               ],
             ),
 
@@ -119,8 +138,8 @@ class ContactScreen extends StatelessWidget {
             
             Center(
               child: Text(
-                "Akıllı Belediye Uygulaması v1.0.0 (MVP)",
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                'contact_version'.tr(),
+                style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade500 : Colors.grey[600]),
               ),
             ),
           ],
@@ -129,15 +148,14 @@ class ContactScreen extends StatelessWidget {
     );
   }
 
-  // SOSYAL MEDYA BUTON YAPISI
-  Widget buildSocialIcon(IconData icon, String label, Color color, String url) {
+  Widget buildSocialIcon(IconData icon, String label, Color color, String url, bool isDark) {
     return Column(
       children: [
         InkWell(
           onTap: () => _launchURL(url),
           child: CircleAvatar(
             radius: 25,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: isDark ? color.withOpacity(0.2) : color.withOpacity(0.1),
             child: Icon(icon, color: color, size: 30),
           ),
         ),

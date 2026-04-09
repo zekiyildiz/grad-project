@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart'; // Harita paketi
-import 'package:latlong2/latlong.dart'; // Koordinat tipi için
+import 'package:flutter_map/flutter_map.dart'; 
+import 'package:latlong2/latlong.dart'; 
+import 'package:easy_localization/easy_localization.dart'; 
 
 class ManualAddressScreen extends StatefulWidget {
   final String emergencyType;
@@ -15,19 +16,17 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
   final _addressController = TextEditingController();
   bool _isLoading = false;
 
-  // Başlangıç konumu: Keçiören (AYBÜ Kampüsü civarı)
   LatLng _selectedPoint = const LatLng(39.9711, 32.8186); 
 
   void _submitAddress() async {
     if (_addressController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Lütfen açık adresinizi de yazınız.")),
+        SnackBar(content: Text('manual_loc_err_empty'.tr())),
       );
       return;
     }
 
     setState(() => _isLoading = true);
-    // Simülasyon
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
@@ -38,20 +37,23 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.check_circle, size: 60, color: Colors.green),
-        title: const Text("İhbar İletildi"),
+        title: Text('manual_loc_success_title'.tr()),
         content: Text(
-          "${widget.emergencyType} ihbarınız işaretlediğiniz konum ve adres bilgisiyle iletildi.\n\n"
-          "Seçilen: ${_selectedPoint.latitude.toStringAsFixed(4)}, ${_selectedPoint.longitude.toStringAsFixed(4)}",
+          'manual_loc_success_desc'.tr(args: [
+            widget.emergencyType,
+            _selectedPoint.latitude.toStringAsFixed(4),
+            _selectedPoint.longitude.toStringAsFixed(4)
+          ]),
           textAlign: TextAlign.center,
         ),
         actions: [
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.pop(context); // ManualAddressScreen kapat
-              Navigator.pop(context); // EmergencyScreen kapat (Ana sayfaya dön)
+              Navigator.pop(context); 
+              Navigator.pop(context); 
             },
-            child: const Text("Tamam"),
+            child: Text('manual_loc_ok'.tr()),
           ),
         ],
       ),
@@ -60,9 +62,12 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // KARANLIK MOD KONTROLÜ
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Haritadan Konum Seç"),
+        title: Text('manual_loc_title'.tr()),
         backgroundColor: Colors.red.shade700,
         foregroundColor: Colors.white,
       ),
@@ -70,7 +75,7 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
         children: [
           // 1. HARİTA ALANI
           Expanded(
-            flex: 3, // Sayfanın çoğunu harita kaplasın
+            flex: 3, 
             child: Stack(
               children: [
                 FlutterMap(
@@ -79,7 +84,7 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
                     initialZoom: 15.0,
                     onTap: (tapPosition, point) {
                       setState(() {
-                        _selectedPoint = point; // Dokunulan yere pini taşı
+                        _selectedPoint = point; 
                       });
                     },
                   ),
@@ -110,12 +115,17 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      // Karanlık moddaysa siyahımsı, değilse beyazımsı arka plan
+                      color: isDark ? Colors.black.withOpacity(0.8) : Colors.white.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      "Haritaya dokunarak tam konumu işaretleyin",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    child: Text(
+                      'manual_loc_map_hint'.tr(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 12,
+                        color: isDark ? Colors.white : Colors.black87, // Yazı rengi
+                      ),
                     ),
                   ),
                 ),
@@ -128,22 +138,24 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
             flex: 2,
             child: Container(
               padding: const EdgeInsets.all(20),
-              color: Colors.white,
+              // Sayfanın alt kısmı temanın kendi arka plan rengini alsın (sabit white sildik)
+              color: Theme.of(context).scaffoldBackgroundColor,
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Açık Adres / Tarif:", 
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('loc_picker_address_label'.tr(), 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 10),
                     TextField(
                       controller: _addressController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        hintText: "Örn: Takdir Cad. No:10, Bakkalın yanı...",
+                        hintText: 'loc_picker_address_hint'.tr(),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        // Textfield içi karanlık/aydınlık mod ayarı
+                        fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
                       ),
                     ),
                     const SizedBox(height: 15),
@@ -159,8 +171,8 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
                         icon: _isLoading 
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
                           : const Icon(Icons.send, color: Colors.white),
-                        label: const Text("KONUMU ONAYLA VE GÖNDER", 
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        label: Text('manual_loc_submit_btn'.tr(), 
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

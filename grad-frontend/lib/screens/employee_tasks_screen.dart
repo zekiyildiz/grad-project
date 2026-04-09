@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart'; // EKLENDİ
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import 'profile_screen.dart';
@@ -7,7 +8,6 @@ import 'settings_screen.dart';
 import 'login_screen.dart';
 
 class EmployeeTasksScreen extends StatefulWidget {
-  // 0: Standart İşler, 1: Acil Bildirimler
   final int initialIndex;
 
   const EmployeeTasksScreen({Key? key, this.initialIndex = 0})
@@ -23,36 +23,36 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
 
   final List<Map<String, dynamic>> _normalTasks = [
     {
-      'title': 'Kırık Bank Onarımı',
-      'loc': 'Bahçelievler Parkı',
-      'status': 'Bekliyor',
-      'time': '2 saat önce',
+      'titleKey': 'emp_task1_title',
+      'locKey': 'emp_task1_loc',
+      'statusKey': 'task_status_waiting',
+      'timeKey': 'emp_task1_time',
     },
     {
-      'title': 'Çöp Konteyneri Değişimi',
-      'loc': 'Emek 8. Cadde',
-      'status': 'Tamamlandı',
-      'time': 'Dün',
+      'titleKey': 'emp_task2_title',
+      'locKey': 'emp_task2_loc',
+      'statusKey': 'task_status_completed',
+      'timeKey': 'emp_task2_time',
     },
   ];
 
   final List<Map<String, dynamic>> _urgentTasks = [
     {
-      'title': 'Ana Su Borusu Patlağı',
-      'loc': 'Demetevler 12. Cadde',
-      'time': '10 dk önce',
+      'titleKey': 'emp_urgent1_title',
+      'locKey': 'emp_urgent1_loc',
+      'timeKey': 'emp_urgent1_time',
       'assigned': false,
     },
     {
-      'title': 'Trafik Kazası / Yol Kapalı',
-      'loc': 'Eskişehir Yolu 15. km',
-      'time': '25 dk önce',
+      'titleKey': 'emp_urgent2_title',
+      'locKey': 'emp_urgent2_loc',
+      'timeKey': 'emp_urgent2_time',
       'assigned': true,
     },
     {
-      'title': 'Ağaç Devrilmesi',
-      'loc': 'Kızılay Meydanı',
-      'time': '40 dk önce',
+      'titleKey': 'emp_urgent3_title',
+      'locKey': 'emp_urgent3_loc',
+      'timeKey': 'emp_urgent3_time',
       'assigned': false,
     },
   ];
@@ -60,7 +60,6 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
   @override
   void initState() {
     super.initState();
-    // Gelen index'e göre açılacak sekmeyi ayarla
     _tabController = TabController(
       length: 2,
       vsync: this,
@@ -68,17 +67,16 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
     );
   }
 
-  // Çıkış Onay Dialoğu
-  void _showLogoutConfirmDialog(BuildContext context, ThemeProvider themeProvider) {
+  void _showLogoutConfirmDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(themeProvider.translate('logout')),
-        content: Text(themeProvider.translate('logout_confirm')),
+        title: Text('logout'.tr()),
+        content: Text('logout_confirm'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(themeProvider.translate('cancel')),
+            child: Text('cancel'.tr()),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -94,10 +92,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text(
-              themeProvider.translate('logout'),
-              style: const TextStyle(color: Colors.white),
-            ),
+            child: Text('logout'.tr(), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -106,14 +101,14 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark; // KARANLIK MOD KONTROLÜ
     
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: isDark ? Colors.grey.shade900 : Colors.grey.shade100, // DİNAMİK ARKA PLAN
       appBar: AppBar(
-        title: const Text(
-          'Saha Yönetimi',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          'employee_app_bar_title'.tr(),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.orange.shade800,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -122,18 +117,15 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(icon: Icon(Icons.assignment), text: 'Standart İşler'),
-            Tab(
-              icon: Icon(Icons.notification_important),
-              text: 'ACİL BİLDİRİMLER',
-            ),
+          tabs: [
+            Tab(icon: const Icon(Icons.assignment), text: 'employee_tab_standard'.tr()),
+            Tab(icon: const Icon(Icons.notification_important), text: 'employee_tab_urgent'.tr()),
           ],
         ),
       ),
       
-      // DRAWER MENÜ
       drawer: Drawer(
+        backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -149,12 +141,12 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
                     child: Icon(Icons.engineering, size: 35, color: Colors.orange),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'Saha Yönetimi',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    'employee_app_bar_title'.tr(),
+                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Belediye Çalışanı',
+                    'employee_drawer_subtitle'.tr(),
                     style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
                   ),
                 ],
@@ -162,7 +154,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
             ),
             ListTile(
               leading: const Icon(Icons.person, color: Colors.blue),
-              title: const Text('Profilim'),
+              title: Text('prof_title'.tr()),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
@@ -170,7 +162,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
             ),
             ListTile(
               leading: const Icon(Icons.settings, color: Colors.blueGrey),
-              title: Text(themeProvider.translate('settings_title')),
+              title: Text('settings_title'.tr()),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
@@ -179,10 +171,10 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Çıkış Yap'),
+              title: Text('logout'.tr()),
               onTap: () {
                 Navigator.pop(context);
-                _showLogoutConfirmDialog(context, themeProvider);
+                _showLogoutConfirmDialog(context);
               },
             ),
           ],
@@ -199,16 +191,17 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
             itemBuilder: (context, index) {
               final task = _normalTasks[index];
               return Card(
+                color: isDark ? Colors.grey.shade800 : Colors.white, // DİNAMİK KART
                 child: ListTile(
                   leading: const Icon(Icons.engineering, color: Colors.blue),
-                  title: Text(task['title']),
-                  subtitle: Text(task['loc']),
+                  title: Text(task['titleKey'].toString().tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                  subtitle: Text(task['locKey'].toString().tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700)),
                 ),
               );
             },
           ),
 
-          // 2. SEKME: ACİL BİLDİRİM (ATA BUTONLU)
+          // 2. SEKME: ACİL BİLDİRİM
           ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: _urgentTasks.length,
@@ -217,6 +210,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
               bool isAssigned = task['assigned'];
               return Card(
                 elevation: 3,
+                color: isDark ? Colors.grey.shade800 : Colors.white, // DİNAMİK KART
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -229,28 +223,24 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: isAssigned
-                          ? Colors.green.shade100
-                          : Colors.red.shade100,
+                      backgroundColor: isAssigned ? Colors.green.shade100 : Colors.red.shade100,
                       child: Icon(
                         isAssigned ? Icons.check : Icons.campaign,
-                        color: isAssigned
-                            ? Colors.green.shade800
-                            : Colors.red.shade800,
+                        color: isAssigned ? Colors.green.shade800 : Colors.red.shade800,
                       ),
                     ),
                     title: Text(
-                      task['title'],
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      task['titleKey'].toString().tr(),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
                     ),
-                    subtitle: Text("${task['loc']} • ${task['time']}"),
+                    subtitle: Text(
+                      "${task['locKey'].toString().tr()} • ${task['timeKey'].toString().tr()}",
+                      style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                    ),
                     trailing: isAssigned
-                        ? const Text(
-                            "EKİP SAHADA",
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        ? Text(
+                            "urgent_status_on_field".tr(),
+                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                           )
                         : ElevatedButton(
                             onPressed: () {
@@ -258,16 +248,14 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen>
                                 task['assigned'] = true;
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Ekip yönlendirildi!"),
-                                ),
+                                SnackBar(content: Text("urgent_snack_dispatched".tr())),
                               );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red.shade700,
                               foregroundColor: Colors.white,
                             ),
-                            child: const Text("EKİP ATA"),
+                            child: Text("urgent_btn_assign".tr()),
                           ),
                   ),
                 ),

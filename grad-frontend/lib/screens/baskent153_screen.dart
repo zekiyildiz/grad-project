@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; // En üste eklendi
+import 'package:url_launcher/url_launcher.dart'; 
+import 'package:easy_localization/easy_localization.dart'; 
 
 class Baskent153Screen extends StatelessWidget {
   const Baskent153Screen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // SAYFANIN KARANLIK MODDA OLUP OLMADIĞINI KONTROL EDİYORUZ
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      // backgroundColor: Colors.white, <-- BU SATIRI SİLDİK (Tema kendi rengini versin)
       appBar: AppBar(
-        title: const Text("Başkent 153"),
+        title: Text("baskent153_title".tr()),
         centerTitle: true,
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
@@ -21,7 +25,8 @@ class Baskent153Screen extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: BoxDecoration(
-              color: Colors.orange.shade50,
+              // Karanlık moddaysa hafif şeffaf turuncu, aydınlıksa açık turuncu
+              color: isDark ? Colors.orange.withOpacity(0.1) : Colors.orange.shade50,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
@@ -31,15 +36,19 @@ class Baskent153Screen extends StatelessWidget {
               children: [
                 const Icon(Icons.support_agent, size: 80, color: Colors.orange),
                 const SizedBox(height: 20),
-                const Text(
-                  "7/24 Çözüm Merkezi",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                Text(
+                  "baskent153_subtitle".tr(),
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "Her türlü istek, öneri ve şikayetiniz için\nbize ulaşabilirsiniz.",
+                  "baskent153_desc".tr(),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                  // Yazı rengi karanlık/aydınlık moda göre değişiyor
+                  style: TextStyle(
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, 
+                    fontSize: 16
+                  ),
                 ),
               ],
             ),
@@ -68,16 +77,15 @@ class Baskent153Screen extends StatelessWidget {
                       color: Colors.white,
                       size: 28,
                     ),
-                    label: const Text(
-                      "ALO 153'ü Ara",
-                      style: TextStyle(
+                    label: Text(
+                      "baskent153_call_btn".tr(),
+                      style: const TextStyle(
                         fontSize: 20,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     onPressed: () async {
-                      // Arama ekranını açan yeni kod bloğumuz:
                       final Uri launchUri = Uri(
                         scheme: 'tel',
                         path: '153',
@@ -87,9 +95,8 @@ class Baskent153Screen extends StatelessWidget {
                         if (await canLaunchUrl(launchUri)) {
                           await launchUrl(launchUri);
                         } else {
-                          // Eğer emülatörde arama özelliği yoksa bu uyarı çıkar
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Arama özelliği bu cihazda desteklenmiyor.")),
+                            SnackBar(content: Text("baskent153_call_err".tr())),
                           );
                         }
                       } catch (e) {
@@ -98,50 +105,48 @@ class Baskent153Screen extends StatelessWidget {
                     },
                   ),
                 ),
-const SizedBox(height: 10), 
+                const SizedBox(height: 10), 
                // 2. WHATSAPP HATTI
-SizedBox(
-  width: double.infinity,
-  height: 60,
-  child: OutlinedButton.icon(
-    style: OutlinedButton.styleFrom(
-      side: const BorderSide(color: Colors.green, width: 2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-    ),
-    icon: const Icon(Icons.chat, color: Colors.green, size: 28),
-    label: const Text(
-      "WhatsApp Destek",
-      style: TextStyle(
-        fontSize: 20,
-        color: Colors.green,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-    onPressed: () async {
-      // WhatsApp numarasını uluslararası formatta yazıyoruz (Başkent 153 Hattı)
-      const String phoneNumber = "903121530000"; 
-      const String message = "Merhaba, bir konu hakkında bilgi almak istiyorum.";
-      
-      // WhatsApp URL formatı (wa.me)
-      final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.green, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    icon: const Icon(Icons.chat, color: Colors.green, size: 28),
+                    label: Text(
+                      "baskent153_wp_btn".tr(),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () async {
+                      const String phoneNumber = "903121530000"; 
+                      String message = "baskent153_wp_msg".tr();
+                      
+                      final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
 
-      try {
-        if (await canLaunchUrl(whatsappUri)) {
-          await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("WhatsApp uygulaması bulunamadı.")),
-          );
-        }
-      } catch (e) {
-        debugPrint("WhatsApp hatası: $e");
-      }
-    },
-  ),
-),
-const SizedBox(height: 20), // <-- aradaki mesafe için
+                      try {
+                        if (await canLaunchUrl(whatsappUri)) {
+                          await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("baskent153_wp_err".tr())),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint("WhatsApp hatası: $e");
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -149,8 +154,11 @@ const SizedBox(height: 20), // <-- aradaki mesafe için
           Padding(
             padding: const EdgeInsets.only(bottom: 30),
             child: Text(
-              "Sizlere hizmet etmekten mutluluk duyuyoruz.",
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              "baskent153_footer".tr(),
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, 
+                fontSize: 12
+              ),
             ),
           ),
         ],

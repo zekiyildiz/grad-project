@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart'; 
 import '../providers/auth_provider.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -32,9 +33,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           color: Colors.red,
           size: 48,
         ),
-        title: const Text(
-          'Hata',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          'forgot_pass_error_title'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
           message,
@@ -52,7 +53,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Tamam'),
+              child: Text('forgot_pass_ok'.tr()),
             ),
           ),
         ],
@@ -76,7 +77,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _emailSent = true;
       });
     } else {
-      final errorMsg = authProvider.errorMessage ?? 'Şifre sıfırlama e-postası gönderilemedi';
+      final errorMsg = authProvider.errorMessage ?? 'forgot_pass_err_default'.tr();
       print('🔴 Forgot password error: $errorMsg');
       _showErrorDialog(errorMsg);
     }
@@ -88,7 +89,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Şifremi Unuttum', style: TextStyle(color: Colors.white)),
+        title: Text('forgot_pass_title'.tr(), style: const TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4094FF),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -100,7 +101,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             colors: [
               const Color(0xFF4094FF),
               const Color(0xFF4094FF).withOpacity(0.7),
-              Colors.white,
+              // Karanlık modda gradyanın sonunu temaya uyumlu yapıyoruz
+              Theme.of(context).scaffoldBackgroundColor, // DÜZELTİLDİ
             ],
             stops: const [0.0, 0.2, 0.5],
           ),
@@ -118,11 +120,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildSuccessContent() {
+    // Okunması için karanlık mod kontrolü
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
+      // Kart arka planını temaya uyumlu hale getir
+      color: isDark ? Colors.grey.shade900 : Colors.white, // DÜZELTİLDİ
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -141,30 +148,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'E-posta Gönderildi!',
+            Text(
+              'forgot_pass_success_title'.tr(),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF343A40),
+                color: isDark ? Colors.white : const Color(0xFF343A40), // DÜZELTİLDİ
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Şifre sıfırlama bağlantısı\n${_emailController.text}\nadresine gönderildi.',
+              'forgot_pass_sent_to'.tr(args: [_emailController.text]),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: isDark ? Colors.grey.shade300 : Colors.grey[600], // DÜZELTİLDİ
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Lütfen e-posta kutunuzu kontrol edin.',
+              'forgot_pass_check_inbox'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: isDark ? Colors.grey.shade500 : Colors.grey[500], // DÜZELTİLDİ
               ),
             ),
             const SizedBox(height: 32),
@@ -180,9 +187,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Giriş Sayfasına Dön',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Text(
+                  'forgot_pass_back_to_login'.tr(),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -193,7 +200,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   _emailSent = false;
                 });
               },
-              child: const Text('Farklı bir e-posta dene'),
+              child: Text('forgot_pass_try_different'.tr()),
             ),
           ],
         ),
@@ -202,6 +209,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildFormContent(AuthProvider authProvider) {
+    // Okunması için karanlık mod kontrolü
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -228,9 +238,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         
         const SizedBox(height: 24),
         
-        const Text(
-          'Şifrenizi mi unuttunuz?',
-          style: TextStyle(
+        Text(
+          'forgot_pass_header'.tr(),
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -239,12 +249,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         
         const SizedBox(height: 8),
         
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Text(
-            'E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.',
+            'forgot_pass_desc'.tr(),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               color: Colors.white70,
             ),
@@ -259,6 +269,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
+          // Kart arka planını temaya uyumlu hale getir
+          color: isDark ? Colors.grey.shade900 : Colors.white, // DÜZELTİLDİ
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Form(
@@ -271,21 +283,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      labelText: 'E-posta',
-                      hintText: 'ornek@mail.com',
+                      labelText: 'forgot_pass_email_label'.tr(),
+                      hintText: 'forgot_pass_email_hint'.tr(),
                       prefixIcon: const Icon(Icons.email_outlined),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      // Textfield içi karanlık/aydınlık mod ayarı
+                      fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50], // DÜZELTİLDİ
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'E-posta adresinizi girin';
+                        return 'forgot_pass_email_empty'.tr();
                       }
                       if (!value.contains('@')) {
-                        return 'Geçerli bir e-posta adresi girin';
+                        return 'forgot_pass_email_invalid'.tr();
                       }
                       return null;
                     },
@@ -315,9 +328,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text(
-                              'Şifre Sıfırlama E-postası Gönder',
-                              style: TextStyle(
+                          : Text(
+                              'forgot_pass_send_btn'.tr(),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -336,9 +349,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         TextButton.icon(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white70),
-          label: const Text(
-            'Giriş sayfasına dön',
-            style: TextStyle(color: Colors.white70),
+          label: Text(
+            'forgot_pass_back_link'.tr(),
+            style: const TextStyle(color: Colors.white70),
           ),
         ),
       ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // EKLENDİ
 
 class ConfirmationScreen extends StatelessWidget {
   // Başarılı bir gönderim sonrası bu ekranı kullanacağız.
@@ -23,20 +24,20 @@ class ConfirmationScreen extends StatelessWidget {
               const SizedBox(height: 30),
 
               // 2. Başlık ve Açıklama
-              const Text(
-                'Raporunuz Gönderildi!',
+              Text(
+                'conf_title'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.green,
                 ),
               ),
               const SizedBox(height: 15),
-              const Text(
-                'Şikayetiniz belediye sistemine güvenli bir şekilde iletildi. Çözüm sürecini "Şikayet Geçmişim" sekmesinden takip edebilirsiniz.',
+              Text(
+                'conf_desc'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
                 ),
@@ -59,9 +60,9 @@ class ConfirmationScreen extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.arrow_back_ios_new),
-                label: const Text(
-                  'Ana Sayfaya Dön',
-                  style: TextStyle(fontSize: 18),
+                label: Text(
+                  'conf_back_btn'.tr(),
+                  style: const TextStyle(fontSize: 18),
                 ),
               ),
             ],

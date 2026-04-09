@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart'; // EKLENDİ
 import '../providers/auth_provider.dart';
 import '../data/ankara_locations.dart';
 import 'homepage_screen.dart';
@@ -23,7 +24,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   
-  // Location selection
   String? _selectedDistrict;
   String? _selectedNeighborhood;
   List<String> _neighborhoods = [];
@@ -50,9 +50,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           color: Colors.red,
           size: 48,
         ),
-        title: const Text(
-          'Kayıt Başarısız',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          'reg_fail_title'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
           message,
@@ -70,7 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Tamam'),
+              child: Text('reg_ok'.tr()),
             ),
           ),
         ],
@@ -91,12 +91,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           color: Colors.green,
           size: 48,
         ),
-        title: const Text(
-          'Kayıt Başarılı!',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          'reg_success_title'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        content: const Text(
-          'Hesabınız oluşturuldu. Hoş geldiniz!',
+        content: Text(
+          'reg_success_desc'.tr(),
           textAlign: TextAlign.center,
         ),
         actions: [
@@ -117,7 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Devam Et'),
+              child: Text('reg_continue'.tr()),
             ),
           ),
         ],
@@ -146,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (success) {
       _showSuccessDialog();
     } else {
-      final errorMsg = authProvider.errorMessage ?? 'Kayıt yapılırken bir hata oluştu';
+      final errorMsg = authProvider.errorMessage ?? 'reg_err_default'.tr();
       print('🔴 Register error: $errorMsg');
       _showErrorDialog(errorMsg);
     }
@@ -177,7 +177,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Header
                   const Icon(
                     Icons.person_add,
                     size: 60,
@@ -186,9 +185,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  const Text(
-                    'Yeni Hesap Oluştur',
-                    style: TextStyle(
+                  Text(
+                    'reg_header'.tr(),
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -197,9 +196,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   
                   const SizedBox(height: 8),
                   
-                  const Text(
-                    'Akıllı Belediye\'ye katılın',
-                    style: TextStyle(
+                  Text(
+                    'reg_subheader'.tr(),
+                    style: const TextStyle(
                       fontSize: 16,
                       color: Colors.white70,
                     ),
@@ -207,7 +206,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   
                   const SizedBox(height: 30),
                   
-                  // Register Form Card
                   Card(
                     elevation: 8,
                     shape: RoundedRectangleBorder(
@@ -220,13 +218,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Name Field
                             TextFormField(
                               controller: _nameController,
                               textCapitalization: TextCapitalization.words,
                               decoration: InputDecoration(
-                                labelText: 'Ad Soyad',
-                                hintText: 'Ahmet Yılmaz',
+                                labelText: 'reg_name_label'.tr(),
+                                hintText: 'reg_name_hint'.tr(),
                                 prefixIcon: const Icon(Icons.person_outline),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -236,10 +233,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Adınızı girin';
+                                  return 'reg_name_err_empty'.tr();
                                 }
                                 if (value.length < 2) {
-                                  return 'Ad en az 2 karakter olmalı';
+                                  return 'reg_name_err_length'.tr();
                                 }
                                 return null;
                               },
@@ -247,13 +244,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             const SizedBox(height: 16),
                             
-                            // Email Field
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
-                                labelText: 'E-posta',
-                                hintText: 'ornek@mail.com',
+                                labelText: 'reg_email_label'.tr(),
+                                hintText: 'reg_email_hint'.tr(),
                                 prefixIcon: const Icon(Icons.email_outlined),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -263,10 +259,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'E-posta adresinizi girin';
+                                  return 'reg_email_err_empty'.tr();
                                 }
                                 if (!value.contains('@')) {
-                                  return 'Geçerli bir e-posta adresi girin';
+                                  return 'reg_email_err_invalid'.tr();
                                 }
                                 return null;
                               },
@@ -274,7 +270,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             const SizedBox(height: 16),
                             
-                            // Phone Field (Optional)
                             TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
@@ -284,8 +279,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 _TurkishPhoneNumberFormatter(),
                               ],
                               decoration: InputDecoration(
-                                labelText: 'Telefon (Opsiyonel)',
-                                hintText: '5XX XXX XX XX',
+                                labelText: 'reg_phone_label'.tr(),
+                                hintText: 'reg_phone_hint'.tr(),
                                 prefixIcon: const Icon(Icons.phone_outlined),
                                 prefixText: '+90 ',
                                 border: OutlineInputBorder(
@@ -296,13 +291,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               validator: (value) {
                                 if (value != null && value.isNotEmpty) {
-                                  // Remove spaces for validation
                                   final digitsOnly = value.replaceAll(' ', '');
                                   if (digitsOnly.length != 10) {
-                                    return 'Telefon numarası 10 haneli olmalı';
+                                    return 'reg_phone_err_length'.tr();
                                   }
                                   if (!digitsOnly.startsWith('5')) {
-                                    return 'Telefon numarası 5 ile başlamalı';
+                                    return 'reg_phone_err_start'.tr();
                                   }
                                 }
                                 return null;
@@ -311,11 +305,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             const SizedBox(height: 16),
                             
-                            // District Dropdown
                             DropdownButtonFormField<String>(
                               value: _selectedDistrict,
                               decoration: InputDecoration(
-                                labelText: 'İlçe',
+                                labelText: 'reg_district_label'.tr(),
                                 prefixIcon: const Icon(Icons.location_city_outlined),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -323,7 +316,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 filled: true,
                                 fillColor: Colors.grey[50],
                               ),
-                              hint: const Text('İlçe seçin'),
+                              hint: Text('reg_district_hint'.tr()),
                               items: AnkaraLocationData.districts.map((district) {
                                 return DropdownMenuItem(
                                   value: district,
@@ -341,7 +334,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Lütfen ilçe seçin';
+                                  return 'reg_district_err'.tr();
                                 }
                                 return null;
                               },
@@ -349,11 +342,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             const SizedBox(height: 16),
                             
-                            // Neighborhood Dropdown
                             DropdownButtonFormField<String>(
                               value: _selectedNeighborhood,
                               decoration: InputDecoration(
-                                labelText: 'Mahalle',
+                                labelText: 'reg_neighborhood_label'.tr(),
                                 prefixIcon: const Icon(Icons.home_outlined),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -362,8 +354,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 fillColor: Colors.grey[50],
                               ),
                               hint: Text(_selectedDistrict == null 
-                                  ? 'Önce ilçe seçin' 
-                                  : 'Mahalle seçin'),
+                                  ? 'reg_neighborhood_hint1'.tr() 
+                                  : 'reg_neighborhood_hint2'.tr()),
                               items: _neighborhoods.map((neighborhood) {
                                 return DropdownMenuItem(
                                   value: neighborhood,
@@ -379,7 +371,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Lütfen mahalle seçin';
+                                  return 'reg_neighborhood_err'.tr();
                                 }
                                 return null;
                               },
@@ -387,12 +379,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             const SizedBox(height: 16),
                             
-                            // Password Field
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
                               decoration: InputDecoration(
-                                labelText: 'Şifre',
+                                labelText: 'reg_pass_label'.tr(),
                                 hintText: '••••••••',
                                 prefixIcon: const Icon(Icons.lock_outline),
                                 suffixIcon: IconButton(
@@ -415,10 +406,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Şifrenizi girin';
+                                  return 'reg_pass_err_empty'.tr();
                                 }
                                 if (value.length < 6) {
-                                  return 'Şifre en az 6 karakter olmalı';
+                                  return 'reg_pass_err_length'.tr();
                                 }
                                 return null;
                               },
@@ -426,12 +417,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             const SizedBox(height: 16),
                             
-                            // Confirm Password Field
                             TextFormField(
                               controller: _confirmPasswordController,
                               obscureText: _obscureConfirmPassword,
                               decoration: InputDecoration(
-                                labelText: 'Şifre Tekrar',
+                                labelText: 'reg_pass_confirm_label'.tr(),
                                 hintText: '••••••••',
                                 prefixIcon: const Icon(Icons.lock_outline),
                                 suffixIcon: IconButton(
@@ -454,10 +444,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Şifrenizi tekrar girin';
+                                  return 'reg_pass_confirm_err_empty'.tr();
                                 }
                                 if (value != _passwordController.text) {
-                                  return 'Şifreler eşleşmiyor';
+                                  return 'reg_pass_confirm_err_match'.tr();
                                 }
                                 return null;
                               },
@@ -465,7 +455,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             const SizedBox(height: 24),
                             
-                            // Register Button
                             SizedBox(
                               height: 50,
                               child: ElevatedButton(
@@ -487,9 +476,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                         ),
                                       )
-                                    : const Text(
-                                        'Kayıt Ol',
-                                        style: TextStyle(
+                                    : Text(
+                                        'reg_btn'.tr(),
+                                        style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -504,13 +493,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  // Login Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Zaten hesabınız var mı? ',
-                        style: TextStyle(color: Colors.grey),
+                      Text(
+                        'reg_have_account'.tr(),
+                        style: const TextStyle(color: Colors.grey),
                       ),
                       TextButton(
                         onPressed: () {
@@ -521,9 +509,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           );
                         },
-                        child: const Text(
-                          'Giriş Yap',
-                          style: TextStyle(
+                        child: Text(
+                          'reg_login_link'.tr(),
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF4094FF),
                           ),
@@ -541,7 +529,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-/// Turkish phone number formatter (5XX XXX XX XX)
 class _TurkishPhoneNumberFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -554,24 +541,18 @@ class _TurkishPhoneNumberFormatter extends TextInputFormatter {
       return newValue;
     }
 
-    // Remove all spaces
     final digitsOnly = text.replaceAll(' ', '');
-    
-    // Build formatted string
     final buffer = StringBuffer();
     
     for (int i = 0; i < digitsOnly.length; i++) {
       buffer.write(digitsOnly[i]);
       
-      // Add space after 3rd digit (5XX XXX)
       if (i == 2 && digitsOnly.length > 3) {
         buffer.write(' ');
       }
-      // Add space after 6th digit (5XX XXX XX)
       else if (i == 5 && digitsOnly.length > 6) {
         buffer.write(' ');
       }
-      // Add space after 8th digit (5XX XXX XX XX)
       else if (i == 7 && digitsOnly.length > 8) {
         buffer.write(' ');
       }
