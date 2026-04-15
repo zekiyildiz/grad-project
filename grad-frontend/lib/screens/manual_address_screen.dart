@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart'; 
 import 'package:latlong2/latlong.dart'; 
 import 'package:easy_localization/easy_localization.dart'; 
+import 'package:geocoding/geocoding.dart'; // 🌟 Koordinatı adrese çevirmek için eklendi
+
+import '../services/report_service.dart';
+import 'login_screen.dart';
 
 class ManualAddressScreen extends StatefulWidget {
   final String emergencyType;
-
   const ManualAddressScreen({Key? key, required this.emergencyType}) : super(key: key);
 
   @override
@@ -14,44 +18,77 @@ class ManualAddressScreen extends StatefulWidget {
 
 class _ManualAddressScreenState extends State<ManualAddressScreen> {
   final _addressController = TextEditingController();
+  final ReportService _reportService = ReportService();
+
   bool _isLoading = false;
+  LatLng _selectedPoint = const LatLng(39.9711, 32.8186); // Varsayılan: Ankara
 
-  LatLng _selectedPoint = const LatLng(39.9711, 32.8186); 
-
+  // --- 🌟 AKILLI GÖNDERİM FONKSİYONU ---
   void _submitAddress() async {
-    if (_addressController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('manual_loc_err_empty'.tr())),
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+    try {
+      String finalAddress = _addressController.text.trim();
 
+      // 1. Eğer kullanıcı tarif yazmadıysa, koordinattan adres bulalım
+      if (finalAddress.isEmpty || finalAddress.toLowerCase() == "xx") {
+        try {
+          List<Placemark> placemarks = await placemarkFromCoordinates(
+            _selectedPoint.latitude,
+            _selectedPoint.longitude,
+          );
+          if (placemarks.isNotEmpty) {
+            Placemark p = placemarks.first;
+            finalAddress = "${p.thoroughfare ?? ''} ${p.subLocality ?? ''}, ${p.administrativeArea ?? ''}";
+          }
+        } catch (e) {
+          // Adres çözülemezse koordinatı metin olarak yaz
+          finalAddress = "${_selectedPoint.latitude.toStringAsFixed(4)}, ${_selectedPoint.longitude.toStringAsFixed(4)}";
+        }
+      }
+
+      // 2. Raporu Gönder (Hem koordinatlar hem de oluşturulan adres gidiyor)
+      await _reportService.createReport(
+        category: widget.emergencyType,
+        description: 'emerg_default_desc'.tr(),
+        latitude: _selectedPoint.latitude,
+        longitude: _selectedPoint.longitude,
+        address: finalAddress, // 🌟 Artık asla "Bilinmeyen Konum" olmayacak
+        isUrgent: true,
+        imageUrls: [],
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      // Başarı Diyaloğu
+      _showSuccess(finalAddress);
+
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _handleError(e.toString());
+    }
+  }
+
+  void _showSuccess(String address) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         icon: const Icon(Icons.check_circle, size: 60, color: Colors.green),
         title: Text('manual_loc_success_title'.tr()),
         content: Text(
-          'manual_loc_success_desc'.tr(args: [
-            widget.emergencyType,
-            _selectedPoint.latitude.toStringAsFixed(4),
-            _selectedPoint.longitude.toStringAsFixed(4)
-          ]),
+          "${widget.emergencyType} ihbarınız şu konuma iletildi:\n\n$address",
           textAlign: TextAlign.center,
         ),
         actions: [
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.pop(context); 
-              Navigator.pop(context); 
+              Navigator.pop(context);
             },
             child: Text('manual_loc_ok'.tr()),
           ),
@@ -60,9 +97,16 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
     );
   }
 
+  void _handleError(String errorMsg) {
+    if (errorMsg.contains('401')) {
+       // Giriş yap diyalogu (Mevcut kodundaki gibi kalabilir)
+    } else {
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg), backgroundColor: Colors.red));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // KARANLIK MOD KONTROLÜ
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -73,7 +117,7 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
       ),
       body: Column(
         children: [
-          // 1. HARİTA ALANI
+          // 1. HARİTA ALANI (Tıklanan yeri seçer)
           Expanded(
             flex: 3, 
             child: Stack(
@@ -82,97 +126,67 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
                   options: MapOptions(
                     initialCenter: _selectedPoint,
                     initialZoom: 15.0,
-                    onTap: (tapPosition, point) {
-                      setState(() {
-                        _selectedPoint = point; 
-                      });
-                    },
+                    onTap: (tapPosition, point) => setState(() => _selectedPoint = point),
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.akilli_belediye.app',
+                      urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                      subdomains: const ['a', 'b', 'c', 'd'], // CartoDB'nin alt sunucuları 
+                      userAgentPackageName: 'com.merve.akillibelediye', 
                     ),
                     MarkerLayer(
                       markers: [
                         Marker(
                           point: _selectedPoint,
-                          width: 80,
-                          height: 80,
-                          child: const Icon(
-                            Icons.location_on,
-                            color: Colors.red,
-                            size: 45,
-                          ),
+                          width: 80, height: 80,
+                          child: const Icon(Icons.location_on, color: Colors.red, size: 45),
                         ),
                       ],
                     ),
                   ],
                 ),
                 Positioned(
-                  top: 10,
-                  left: 10,
+                  top: 10, left: 10,
                   child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      // Karanlık moddaysa siyahımsı, değilse beyazımsı arka plan
-                      color: isDark ? Colors.black.withOpacity(0.8) : Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'manual_loc_map_hint'.tr(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold, 
-                        fontSize: 12,
-                        color: isDark ? Colors.white : Colors.black87, // Yazı rengi
-                      ),
-                    ),
+                    decoration: BoxDecoration(color: isDark ? Colors.black87 : Colors.white, borderRadius: BorderRadius.circular(10)),
+                    child: Text('manual_loc_map_hint'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                   ),
                 ),
               ],
             ),
           ),
 
-          // 2. ADRES GİRİŞ ALANI
+          // 2. TARİF ALANI (İsteğe Bağlı Hale Geldi)
           Expanded(
             flex: 2,
             child: Container(
               padding: const EdgeInsets.all(20),
-              // Sayfanın alt kısmı temanın kendi arka plan rengini alsın (sabit white sildik)
               color: Theme.of(context).scaffoldBackgroundColor,
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('loc_picker_address_label'.tr(), 
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Açık Adres / Tarif (İsteğe Bağlı):', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 10),
                     TextField(
                       controller: _addressController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        hintText: 'loc_picker_address_hint'.tr(),
+                        hintText: "Haritadan yer seçtiyseniz burayı boş bırakabilirsiniz.",
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         filled: true,
-                        // Textfield içi karanlık/aydınlık mod ayarı
                         fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
                       ),
                     ),
                     const SizedBox(height: 15),
                     SizedBox(
-                      width: double.infinity,
-                      height: 50,
+                      width: double.infinity, height: 50,
                       child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.shade700,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                         onPressed: _isLoading ? null : _submitAddress,
-                        icon: _isLoading 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
-                          : const Icon(Icons.send, color: Colors.white),
-                        label: Text('manual_loc_submit_btn'.tr(), 
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        icon: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.send, color: Colors.white),
+                        label: Text('KONUMU ONAYLA VE GÖNDER', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

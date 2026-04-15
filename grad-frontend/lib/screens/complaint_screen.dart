@@ -11,6 +11,7 @@ import '../providers/theme_provider.dart';
 import 'confirmation_screen.dart';
 import 'location_picker_screen.dart';
 import 'package:latlong2/latlong.dart';
+import 'login_screen.dart'; // Bunu en üstteki import'ların arasına ekle
 
 class ComplaintScreen extends StatefulWidget {
   const ComplaintScreen({Key? key}) : super(key: key);
@@ -83,9 +84,13 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
         return;
       }
 
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 10),
+      // 🌟 ZIRH 1: Önce son bilinen konumu al (Emülatörler için hayat kurtarır)
+      Position? position = await Geolocator.getLastKnownPosition();
+      
+      // Eğer son konum yoksa, düşük doğrulukla (hızlıca) yeni konum iste ve 5 saniye sınır koy
+      position ??= await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low, 
+        timeLimit: const Duration(seconds: 5),
       );
 
       if (!mounted) return;
@@ -94,28 +99,27 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
       });
 
       try {
+        // 🌟 ZIRH 2: Adres dönüştürme (Geocoding) işlemine de 5 saniye sınır (Timeout) ekledik
         List<Placemark> placemarks = await placemarkFromCoordinates(
           position.latitude,
           position.longitude,
-        );
+        ).timeout(const Duration(seconds: 5));
 
         if (placemarks.isNotEmpty && mounted) {
           Placemark place = placemarks[0];
           setState(() {
-            _currentAddress =
-                '${place.thoroughfare ?? ''} ${place.subLocality ?? ''}, ${place.administrativeArea ?? ''}';
+            _currentAddress = '${place.thoroughfare ?? ''} ${place.subLocality ?? ''}, ${place.administrativeArea ?? ''}';
             if (_currentAddress.trim().length < 5) {
-              _currentAddress =
-                  '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+              _currentAddress = '${position!.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
             }
             _gettingLocation = false;
           });
         }
       } catch (e) {
+        // Adres bulamazsa veya zaman aşımına uğrarsa çökmek yerine koordinatı yazar
         if (mounted) {
           setState(() {
-            _currentAddress =
-                '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+            _currentAddress = '${position!.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
             _gettingLocation = false;
           });
         }
@@ -217,39 +221,23 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
     return 'DIGER';
   }
 
-  Future<void> _submitReport() async {
+Future<void> _submitReport() async {
     setState(() {
       _formSubmitted = true;
     });
 
     if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('complaint_err_no_photo'.tr()),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('complaint_err_no_photo'.tr()), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating));
       return;
     }
 
     if (_selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('complaint_err_no_cat'.tr()),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('complaint_err_no_cat'.tr()), backgroundColor: Colors.orange));
       return;
     }
 
     if (_currentPosition == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('complaint_err_no_loc'.tr()),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('complaint_err_no_loc'.tr()), backgroundColor: Colors.orange));
       _getCurrentLocation();
       return;
     }
@@ -257,39 +245,79 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
     setState(() => _isSending = true);
 
     try {
+      // --- 1. DEĞİŞİKLİK: FOTOĞRAFI ÖNCE SUNUCUYA YÜKLÜYORUZ ---
+      // --- 1. RESMİ YÜKLE ---
+      List<String> finalImages = [];
+      try {
+        String? uploadedUrl = await _reportService.uploadImage(_selectedImage!);
+        if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+          finalImages.add(uploadedUrl);
+        }
+      } catch (e) {
+        debugPrint("Fotoğraf yükleme hatası: $e");
+      }
+
+      // --- 2. ŞİKAYETİ KAYDET ---
       await _reportService.createReport(
         category: _selectedCategory!,
-        description: _descriptionController.text.isEmpty
-            ? 'complaint_no_desc'.tr()
-            : _descriptionController.text,
+        description: _descriptionController.text.isEmpty ? 'complaint_no_desc'.tr() : _descriptionController.text,
         latitude: _currentPosition!.latitude,
         longitude: _currentPosition!.longitude,
         address: _currentAddress,
-        imageUrls: [],
+        isUrgent: false, // 🌟 Vatandaş artık elle seçemez, sistem karar verecek
+        imageUrls: finalImages,
       );
 
       if (!mounted) return;
-
       Navigator.pop(context);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ConfirmationScreen()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const ConfirmationScreen()));
+      
     } catch (e) {
       if (!mounted) return;
 
       String errorMsg = e.toString();
+
+      if (errorMsg.contains('401') || errorMsg.contains('Unauthorized') || errorMsg.contains('No token provided')) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            title: Row(
+              children: [
+                const Icon(Icons.lock_outline, color: Colors.orange),
+                const SizedBox(width: 10),
+                Text('complaint_auth_title'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Text('complaint_err_auth'.tr()), 
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('cancel'.tr(), style: const TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                onPressed: () {
+                  Navigator.pop(ctx); 
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+                },
+                child: Text('btn_login_now'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        return; 
+      }
+
       if (errorMsg.contains('DOCTYPE') || errorMsg.contains('html')) {
         errorMsg = 'complaint_err_server'.tr();
       }
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${'complaint_err_general'.tr()} $errorMsg'), backgroundColor: Colors.red),
       );
+      
     } finally {
-      if (mounted) {
-        setState(() => _isSending = false);
-      }
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
@@ -426,7 +454,6 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
                   height: 250,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    // Karanlık mod uyumlu kutu arka planı
                     color: isDark ? Colors.grey.shade900 : Colors.grey[200],
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
@@ -517,7 +544,6 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
                         )
                       : Text(
                           _currentAddress,
-                          // Adres yazısını karanlık moda uyumlu yaptık
                           style: TextStyle(color: isDark ? Colors.grey.shade300 : Colors.grey[700]),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -537,6 +563,8 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
             ),
 
             const Divider(height: 30),
+
+            const SizedBox(height: 20),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -566,7 +594,6 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
                 filled: true,
-                // Karanlık mod uyumlu arkaplan
                 fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
               ),
               hint: Text('issue_type'.tr()),
@@ -616,7 +643,6 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
                 hintText: 'desc_hint'.tr(),
                 border: const OutlineInputBorder(),
                 filled: true,
-                // Karanlık mod uyumlu arkaplan
                 fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
               ),
             ),

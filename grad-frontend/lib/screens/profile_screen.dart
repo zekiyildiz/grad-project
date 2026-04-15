@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart'; 
 import '../providers/auth_provider.dart';
 import '../providers/user_provider.dart';
+import '../services/report_service.dart';
 
-// BİLGİ KARTI
+// --- BİLGİ KARTI BİLEŞENİ ---
 class InfoCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -15,37 +16,23 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      color: isDark ? Colors.grey.shade900 : Colors.white, // DİNAMİK ARKA PLAN
+      color: isDark ? Colors.grey.shade900 : Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-            ),
+            Text(title, style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
             const SizedBox(height: 5),
             Row(
               children: [
                 Icon(icon, color: Colors.blue, size: 24),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      // KARANLIK MODDA BEYAZ YAPTIK Kİ OKUNSUN!
-                      color: isDark ? Colors.white : const Color(0xFF343A40), 
-                    ),
-                  ),
-                ),
+                Expanded(child: Text(subtitle, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF343A40)))),
               ],
             ),
           ],
@@ -55,7 +42,7 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-// İSTATİSTİK KARTI
+// --- İSTATİSTİK KARTI BİLEŞENİ ---
 class StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -67,27 +54,14 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Expanded(
       child: Column(
         children: [
           Icon(icon, size: 50, color: color),
           const SizedBox(height: 5),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.grey.shade300 : const Color(0xFF343A40),
-            ),
-          ),
+          Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade300 : const Color(0xFF343A40))),
           const SizedBox(height: 5),
-          Text(
-            count,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color),
-          ),
+          Text(count, textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)),
         ],
       ),
     );
@@ -102,21 +76,56 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final ReportService _reportService = ReportService();
+  
+  // İstatistik Değişkenleri
+  int _totalCount = 0;
+  int _resolvedCount = 0;
+  int _pollValue = 0;
+  bool _isStatsLoading = true;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadProfile();
+      _loadData();
     });
   }
 
-  Future<void> _loadProfile() async {
+  // --- KRİTİK: ROL BAZLI VERİ ÇEKME MANTIĞI ---
+  Future<void> _loadData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     
     if (authProvider.isAuthenticated) {
       await userProvider.fetchProfile();
     }
+
+    final user = authProvider.user ?? userProvider.profile;
+    // DİKKAT: Veritabanındaki 'role' değerinin 'EMPLOYEE' veya 'ADMIN' olduğundan emin ol.
+    bool isEmployee = user?.role?.toUpperCase() == 'EMPLOYEE' || user?.role?.toUpperCase() == 'ADMIN';
+    
+    try {
+      if (isEmployee) {
+        // --- BELEDİYE ÇALIŞANI: SİSTEMDEKİ TÜM ŞİKAYETLERİ SAY ---
+        final allReports = await _reportService.getAllReports();
+        _totalCount = allReports.length;
+        _resolvedCount = allReports.where((r) => r['status'] == 'RESOLVED').length;
+        
+        // Şimdilik sistemdeki toplam ankete katılımı simüle ediyoruz (PollService gelince bağlanacak)
+        _pollValue = 450; 
+      } else {
+        // --- VATANDAŞ: SADECE KENDİ ŞİKAYETLERİNİ SAY ---
+        final myReports = await _reportService.getMyReports();
+        _totalCount = myReports.length;
+        _resolvedCount = myReports.where((r) => r['status'] == 'RESOLVED').length;
+        _pollValue = 3; 
+      }
+    } catch (e) {
+      debugPrint("İstatistik Yükleme Hatası: $e");
+    }
+
+    if (mounted) setState(() => _isStatsLoading = false);
   }
 
   @override
@@ -126,108 +135,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     final user = authProvider.user ?? userProvider.profile;
-    
-    final String adSoyad = user?.displayName ?? 'prof_guest_user'.tr();
-    final String eposta = user?.email ?? 'prof_not_logged_in'.tr();
-    final String telefon = user?.phone ?? 'prof_not_specified'.tr();
-    final String lokasyon = user?.fullLocation.isNotEmpty == true ? user!.fullLocation : 'prof_not_specified'.tr();
-    
-    const String sikayetSayisi = '0';
-    const String cozulenSayisi = '0';
-    const String anketSayisi = '0';
-    
-    const Color accentPurple = Color(0xFF9C27B0);
-    
+    bool isEmployee = user?.role?.toUpperCase() == 'EMPLOYEE' || user?.role?.toUpperCase() == 'ADMIN';
+
     return Scaffold(
       appBar: AppBar(
         title: Text('prof_title'.tr(), style: const TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4094FF),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          if (authProvider.isAuthenticated)
-            IconButton(icon: const Icon(Icons.refresh), onPressed: _loadProfile, tooltip: 'prof_refresh'.tr()),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
-      body: userProvider.isLoading
+      body: (userProvider.isLoading || _isStatsLoading)
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadProfile,
+              onRefresh: _loadData,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (userProvider.errorMessage != null)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.red.withOpacity(0.1) : Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.red.shade700),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(userProvider.errorMessage!, style: TextStyle(color: Colors.red.shade700))),
-                          ],
-                        ),
-                      ),
-                    
-                    if (!authProvider.isAuthenticated)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 32),
-                            const SizedBox(height: 8),
-                            Text('prof_login_prompt'.tr(), style: TextStyle(color: Colors.blue.shade700), textAlign: TextAlign.center),
-                          ],
-                        ),
-                      ),
-                    
+                    // --- KİŞİSEL BİLGİLER ---
                     Text('prof_personal_info'.tr(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
                     const Divider(height: 15, thickness: 1),
 
-                    InfoCard(icon: Icons.person, title: 'prof_name'.tr(), subtitle: adSoyad),
-                    InfoCard(icon: Icons.email, title: 'prof_email'.tr(), subtitle: eposta),
-                    InfoCard(icon: Icons.phone, title: 'prof_phone'.tr(), subtitle: telefon),
-                    InfoCard(icon: Icons.location_on, title: 'prof_location'.tr(), subtitle: lokasyon),
+                    InfoCard(icon: Icons.person, title: 'prof_name'.tr(), subtitle: user?.displayName ?? 'prof_guest_user'.tr()),
+                    InfoCard(icon: Icons.email, title: 'prof_email'.tr(), subtitle: user?.email ?? 'prof_not_logged_in'.tr()),
+                    InfoCard(icon: Icons.phone, title: 'prof_phone'.tr(), subtitle: user?.phone ?? 'prof_not_specified'.tr()),
+                    InfoCard(icon: Icons.location_on, title: 'prof_location'.tr(), subtitle: user?.fullLocation ?? 'prof_not_specified'.tr()),
                     
                     const SizedBox(height: 30),
 
+                    // --- İSTATİSTİKLER ---
                     Text('prof_stats'.tr(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
                     const Divider(height: 15, thickness: 1),
                     
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        StatCard(icon: Icons.report_problem, label: 'prof_total_complaints'.tr(), count: sikayetSayisi, color: Colors.red.shade700),
-                        StatCard(icon: Icons.check_circle, label: 'prof_resolved'.tr(), count: cozulenSayisi, color: Colors.green.shade700),
-                        StatCard(icon: Icons.description, label: 'prof_surveys'.tr(), count: anketSayisi, color: accentPurple),
+                        StatCard(
+                          icon: Icons.report_problem, 
+                          // Belediye çalışanı ise 'Toplam Şikayet', Vatandaş ise 'Şikayetlerim'
+                          label: isEmployee ? 'prof_stat_total'.tr() : 'prof_total_complaints'.tr(), 
+                          count: _totalCount.toString(), 
+                          color: Colors.red.shade700
+                        ),
+                        StatCard(
+                          icon: Icons.check_circle, 
+                          label: 'prof_resolved'.tr(), 
+                          count: _resolvedCount.toString(), 
+                          color: Colors.green.shade700
+                        ),
+                        StatCard(
+                          // Belediye çalışanı ise 'Ankete Katılım Sayısı', Vatandaş ise 'Katıldığım Anketler'
+                          icon: isEmployee ? Icons.analytics : Icons.description, 
+                          label: isEmployee ? 'prof_stat_polls_manage'.tr() : 'prof_surveys'.tr(), 
+                          count: _pollValue.toString(), 
+                          color: const Color(0xFF9C27B0)
+                        ),
                       ],
                     ),
 
                     const SizedBox(height: 50),
 
+                    // --- PROFİL DÜZENLEME BUTONU ---
                     if (authProvider.isAuthenticated)
                       SizedBox(
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton.icon(
-                          onPressed: () { _showEditProfileDialog(context); },
+                          onPressed: () => _showEditProfileDialog(context),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: accentPurple,
+                            backgroundColor: const Color(0xFF9C27B0),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
@@ -242,10 +222,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // --- DÜZENLEME DİALOGU ---
   void _showEditProfileDialog(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = userProvider.profile ?? authProvider.user;
+    final user = userProvider.profile;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     final nameController = TextEditingController(text: user?.name ?? '');
@@ -261,25 +241,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nameController, 
-                decoration: InputDecoration(labelText: 'prof_name'.tr(), prefixIcon: const Icon(Icons.person)),
-                style: TextStyle(color: isDark ? Colors.white : Colors.black)
-              ),
+              TextField(controller: nameController, decoration: InputDecoration(labelText: 'prof_name'.tr(), prefixIcon: const Icon(Icons.person))),
               const SizedBox(height: 16),
-              TextField(
-                controller: phoneController, 
-                decoration: InputDecoration(labelText: 'prof_phone'.tr(), prefixIcon: const Icon(Icons.phone)), 
-                keyboardType: TextInputType.phone,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black)
-              ),
+              TextField(controller: phoneController, decoration: InputDecoration(labelText: 'prof_phone'.tr(), prefixIcon: const Icon(Icons.phone)), keyboardType: TextInputType.phone),
               const SizedBox(height: 16),
-              TextField(
-                controller: addressController, 
-                decoration: InputDecoration(labelText: 'prof_address'.tr(), prefixIcon: const Icon(Icons.home)), 
-                maxLines: 2,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black)
-              ),
+              TextField(controller: addressController, decoration: InputDecoration(labelText: 'prof_address'.tr(), prefixIcon: const Icon(Icons.home)), maxLines: 2),
             ],
           ),
         ),
@@ -287,13 +253,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(onPressed: () => Navigator.pop(context), child: Text('prof_cancel'.tr())),
           ElevatedButton(
             onPressed: () async {
-              final success = await userProvider.updateProfile(name: nameController.text.trim(), phone: phoneController.text.trim(), address: addressController.text.trim());
-              if (success && context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('prof_update_success'.tr()), backgroundColor: Colors.green));
-              } else if (context.mounted && userProvider.errorMessage != null) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userProvider.errorMessage!), backgroundColor: Colors.red));
-              }
+              await userProvider.updateProfile(name: nameController.text.trim(), phone: phoneController.text.trim(), address: addressController.text.trim());
+              if (context.mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4094FF)),
             child: Text('prof_save'.tr(), style: const TextStyle(color: Colors.white)),

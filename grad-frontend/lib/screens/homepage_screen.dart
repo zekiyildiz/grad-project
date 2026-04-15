@@ -16,16 +16,18 @@ import 'login_screen.dart';
 import 'baskent153_screen.dart';
 import 'emergency_screen.dart';
 import 'performance_screen.dart'; 
+
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/weather_service.dart'; 
+import '../services/notification_service.dart'; // EKLENDİ
 
 class QuickActionItem {
   final String id;
   final IconData icon;
   final String labelKey;
   final Widget screen;
-  final int? badgeCount;
+  int? badgeCount; // 'final' kelimesi kaldırıldı ki sayıyı dinamik olarak güncelleyebilelim
 
   QuickActionItem({
     required this.id,
@@ -47,18 +49,26 @@ class _HomepageScreenState extends State<HomepageScreen> {
   static const Color primaryBlue = Color(0xFF4094FF);
   static const Color accentPurple = Color(0xFF9C27B0);
 
-  final WeatherService _weatherService = WeatherService(); // hava durumu için eklendi
+  final WeatherService _weatherService = WeatherService(); 
+  final NotificationService _notificationService = NotificationService(); // Servis eklendi
 
   late List<QuickActionItem> allAvailableActions;
   List<String> userSelectedActionIds = [
     'notif', 'events', 'survey', 'history', 'perf', 'settings'
   ];
 
+  int _unreadNotifCount = 0; // Dinamik sayı tutucu
+
   @override
   void initState() {
     super.initState();
+    _initializeActions();
+    _fetchUnreadNotificationCount(); // Sayfa açıldığında sayıyı çek
+  }
+
+  void _initializeActions() {
     allAvailableActions = [
-      QuickActionItem(id: 'notif', icon: Icons.notifications_active, labelKey: 'home_quick_notifications', screen: const NotificationScreen(), badgeCount: 2),
+      QuickActionItem(id: 'notif', icon: Icons.notifications_active, labelKey: 'home_quick_notifications', screen: const NotificationScreen(), badgeCount: _unreadNotifCount),
       QuickActionItem(id: 'events', icon: Icons.calendar_month, labelKey: 'home_quick_events', screen: const EventsScreen()),
       QuickActionItem(id: 'survey', icon: Icons.lightbulb_outline, labelKey: 'home_quick_survey', screen: const SurveyScreen()),
       QuickActionItem(id: 'history', icon: Icons.history, labelKey: 'home_quick_history', screen: const HistoryScreen()),
@@ -68,6 +78,30 @@ class _HomepageScreenState extends State<HomepageScreen> {
       QuickActionItem(id: 'contact', icon: Icons.headset_mic, labelKey: 'home_contact', screen: const ContactScreen()),
       QuickActionItem(id: 'help', icon: Icons.help_outline, labelKey: 'home_help', screen: const HelpScreen()),
     ];
+  }
+
+  // --- KRİTİK EKLENTİ: OKUNMAMIŞ BİLDİRİMLERİ GETİR ---
+  Future<void> _fetchUnreadNotificationCount() async {
+    try {
+      final notifications = await _notificationService.getMyNotifications();
+      if (!mounted) return;
+
+      int unreadCount = 0;
+      for (var notif in notifications) {
+        if (notif['isRead'] == false || notif['isRead'] == null) {
+          unreadCount++;
+        }
+      }
+
+      setState(() {
+        _unreadNotifCount = unreadCount;
+        // Listeyi bul ve güncelle
+        final notifAction = allAvailableActions.firstWhere((a) => a.id == 'notif');
+        notifAction.badgeCount = _unreadNotifCount;
+      });
+    } catch (e) {
+      debugPrint("Bildirim sayısı çekilemedi: $e");
+    }
   }
 
   void _showCustomizeDialog() {
@@ -163,7 +197,11 @@ class _HomepageScreenState extends State<HomepageScreen> {
               backgroundColor: isDark ? primaryBlue.withOpacity(0.2) : primaryBlue.withOpacity(0.1),
               child: IconButton(
                 icon: Icon(action.icon, size: 28, color: isDark ? Colors.lightBlueAccent : primaryBlue),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => action.screen)),
+                onPressed: () async {
+                  // YÖNLENDİRME EKRANINDAN DÖNÜLÜNCE BİLDİRİM SAYISINI TEKRAR ÇEK
+                  await Navigator.push(context, MaterialPageRoute(builder: (context) => action.screen));
+                  _fetchUnreadNotificationCount();
+                },
               ),
             ),
             if (action.badgeCount != null && action.badgeCount! > 0)
@@ -301,7 +339,27 @@ class _HomepageScreenState extends State<HomepageScreen> {
             ),
             ListTile(leading: const Icon(Icons.home, color: Colors.blue), title: Text('home'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), onTap: () => Navigator.pop(context)),
             ListTile(leading: const Icon(Icons.person, color: Colors.blue), title: Text('home_profile'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())); }),
-            ListTile(leading: const Icon(Icons.notifications, color: Colors.blue), title: Text('home_notifications'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen())); }),
+            ListTile(
+              leading: const Icon(Icons.notifications, color: Colors.blue), 
+              title: Row(
+                children: [
+                  Text('home_notifications'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                  if (_unreadNotifCount > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                      child: Text('$_unreadNotifCount', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    )
+                  ]
+                ],
+              ), 
+              onTap: () async { 
+                Navigator.pop(context); 
+                await Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()));
+                _fetchUnreadNotificationCount(); // Drawer'dan gidilip dönülürse güncellensin
+              }
+            ),
             ListTile(leading: const Icon(Icons.history, color: Colors.blue), title: Text('home_history'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())); }),
             ListTile(leading: const Icon(Icons.calendar_today, color: Colors.blue), title: Text('home_events'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const EventsScreen())); }),
             ListTile(leading: const Icon(Icons.poll, color: Colors.blue), title: Text('home_survey'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const SurveyScreen())); }),
@@ -323,7 +381,6 @@ class _HomepageScreenState extends State<HomepageScreen> {
                 children: [
                   const SizedBox(height: 20),
                   
-                  // --- TEXT.RICH KULLANILDI (YAZI BOYUTU ARTIK AYARLARA DUYARLI) ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     child: (authProvider.isAuthenticated && formattedName.isNotEmpty)
@@ -333,15 +390,15 @@ class _HomepageScreenState extends State<HomepageScreen> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w600,
-                                fontStyle: FontStyle.italic, // HOŞ GELDİN KISMI İTALİK YAPILDI
+                                fontStyle: FontStyle.italic, 
                                 color: isDark ? Colors.white70 : Colors.black87,
                               ),
                               children: [
                                 TextSpan(
                                   text: formattedName, 
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w600, 
-                                    fontStyle: FontStyle.normal, // İSİM DÜZ VE VURGULU BIRAKILDI
+                                    fontStyle: FontStyle.normal, 
                                     color: primaryBlue, 
                                   ),
                                 ),
@@ -413,48 +470,46 @@ class _HomepageScreenState extends State<HomepageScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-  child: FutureBuilder<Map<String, dynamic>>(
-    future: _weatherService.fetchWeather(),
-    builder: (context, snapshot) {
-      // Varsayılan değerler (Yüklenirken veya hata varken görünecek)
-      String temp = "--°C";
-      IconData weatherIcon = Icons.cloud_queue;
+                            child: FutureBuilder<Map<String, dynamic>>(
+                              future: _weatherService.fetchWeather(),
+                              builder: (context, snapshot) {
+                                String temp = "--°C";
+                                IconData weatherIcon = Icons.cloud_queue;
 
-      if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data!.isNotEmpty) {
-        final data = snapshot.data!;
-        temp = "${data['main']['temp'].toInt()}°C";
-        
-        // Basit bir ikon mantığı
-        String desc = data['weather'][0]['description'].toLowerCase();
-        if (desc.contains("güneş") || desc.contains("açık")) {
-          weatherIcon = Icons.wb_sunny;
-        } else if (desc.contains("yağmur")) {
-          weatherIcon = Icons.umbrella;
-        } else {
-          weatherIcon = Icons.cloud;
-        }
-      }
+                                if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data!.isNotEmpty) {
+                                  final data = snapshot.data!;
+                                  temp = "${data['main']['temp'].toInt()}°C";
+                                  
+                                  String desc = data['weather'][0]['description'].toLowerCase();
+                                  if (desc.contains("güneş") || desc.contains("açık")) {
+                                    weatherIcon = Icons.wb_sunny;
+                                  } else if (desc.contains("yağmur")) {
+                                    weatherIcon = Icons.umbrella;
+                                  } else {
+                                    weatherIcon = Icons.cloud;
+                                  }
+                                }
 
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.shade50,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: isDark ? Colors.blue.withOpacity(0.3) : Colors.blue.shade100),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(weatherIcon, color: Colors.orange, size: 30),
-            const SizedBox(height: 5),
-            Text('home_weather_city'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(temp, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      );
-    },
-  ),
-),
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(15),
+                                    border: Border.all(color: isDark ? Colors.blue.withOpacity(0.3) : Colors.blue.shade100),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(weatherIcon, color: Colors.orange, size: 30),
+                                      const SizedBox(height: 5),
+                                      Text('home_weather_city'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      Text(temp, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Container(

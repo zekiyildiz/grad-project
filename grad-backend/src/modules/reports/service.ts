@@ -2,95 +2,210 @@ import { getFirestore } from '../../config/firebase';
 
 const COLLECTION = 'reports';
 
+const getAiSuggestion = (category: string) => {
+    switch (category?.toUpperCase()) {
+        case 'CUKUR': return 'FEN_ISLERI';
+        case 'ELEKTRIK': return 'TEDAS';
+        case 'TRAFIK': return 'UKOME';
+        case 'COPLUK': return 'TEMIZLIK';
+        case 'SCOOTER': return 'ZABITA';
+        case 'KIRIK_BANK':
+        case 'AGAC': return 'PARK_BAHCE';
+        case 'POSTER': return 'ZABITA';
+        default: return 'DIGER';
+    }
+};
+
 export class ReportService {
 
     /**
-     * Yeni rapor oluştur ve Firestore'a kaydet
+     * 1. YENİ RAPOR OLUŞTURMA (SİSTEM VE VATANDAŞ AYRIMI)
      */
-    async createReport(data: {
-        userId: string;
-        category: string;
-        description: string;
-        location: { latitude: number; longitude: number; address?: string };
-        images?: string[];
-    }) {
+    async createReport(data: any) {
         const db = getFirestore();
+        
+        const categoryUpper = (data.category || '').toUpperCase();
+        const urgentKeywords = ['YANGIN', 'GAZ', 'SU PATLAĞI', 'ELEKTRİK', 'YOL ÇÖKMESİ'];
+        
+        // 🌟 KRİTİK DÜZELTME BURADA: Eğer vatandaş "Acil" ekranından gönderdiyse (isUrgent true ise), 
+        // kelimeye bakmaksızın acil kabul et!
+        const isUrgent = data.isUrgent === true || data.isUrgent === 'true' || urgentKeywords.some(keyword => categoryUpper.includes(keyword));
+
         const reportData = {
-            userId: data.userId,
-            category: data.category,
-            description: data.description,
-            location: data.location,
-            images: data.images || [],
+            ...data,
             status: 'PENDING',
+            isUrgent: isUrgent, 
+            aiSuggestedInstitution: getAiSuggestion(data.category),
+            assignedInstitution: '',
             createdAt: new Date(),
             updatedAt: new Date(),
         };
 
         const docRef = await db.collection(COLLECTION).add(reportData);
-        console.log(`✅ Rapor Firestore'a kaydedildi: ${docRef.id}`);
+        console.log(`📝 Rapor eklendi. ID: ${docRef.id}. Acil mi?: ${isUrgent}`);
+
+        if (data.userId) {
+            const categoryName = data.category ? data.category.toUpperCase() : "DURUM";
+            const notifTitle = isUrgent ? `🚨 ACİL ${categoryName} İHBARI` : `${categoryName} Şikayetiniz Alındı`;
+            const notifMessage = isUrgent 
+                ? `${categoryName} ihbarınız sistemimize acil koduyla kaydedildi.` 
+                : `${categoryName} konulu şikayetiniz sisteme kaydedildi.`;
+
+            await this.createNotification(data.userId, notifTitle, notifMessage);
+        }
 
         return { id: docRef.id, ...reportData };
     }
 
     /**
-     * Kullanıcının tüm raporlarını getir (yeniden eskiye)
+     * 2. KURUMA ATAMA
      */
-    async getMyReports(userId: string) {
+    async assignInstitution(id: string, institutionCode: string) {
         const db = getFirestore();
-        const snapshot = await db
-            .collection(COLLECTION)
-            .where('userId', '==', userId)
-            .orderBy('createdAt', 'desc')
-            .get();
+        const reportDoc = await db.collection(COLLECTION).doc(id).get();
+        if (!reportDoc.exists) return { success: false, message: "Rapor bulunamadı" };
+        
+        const reportData = reportDoc.data();
 
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate?.()
-                ? doc.data().createdAt.toDate().toISOString()
-                : doc.data().createdAt,
-            updatedAt: doc.data().updatedAt?.toDate?.()
-                ? doc.data().updatedAt.toDate().toISOString()
-                : doc.data().updatedAt,
-        }));
-    }
+        await db.collection(COLLECTION).doc(id).update({
+            assignedInstitution: institutionCode,
+            status: 'IN_PROGRESS',
+            updatedAt: new Date(),
+        });
 
-    /**
-     * Tek bir raporu ID ile getir
-     */
-    async getReportById(id: string) {
-        const db = getFirestore();
-        const doc = await db.collection(COLLECTION).doc(id).get();
-
-        if (!doc.exists) {
-            return null;
+        if (reportData && reportData.userId) {
+            await this.createNotification(
+                reportData.userId, 
+                "Şikayetiniz İşleme Alındı", 
+                `Şikayetiniz ilgili kuruma (${institutionCode}) iletildi.`
+            );
         }
-
-        const data = doc.data()!;
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate?.()
-                ? data.createdAt.toDate().toISOString()
-                : data.createdAt,
-            updatedAt: data.updatedAt?.toDate?.()
-                ? data.updatedAt.toDate().toISOString()
-                : data.updatedAt,
-        };
+        
+        return { id, success: true };
     }
 
     /**
-     * Rapor durumunu güncelle
+     * 3. DURUM GÜNCELLEME (ÇÖZÜLDÜ)
      */
     async updateReportStatus(id: string, status: string, comment?: string) {
         const db = getFirestore();
-        const updateData: any = {
-            status,
-            updatedAt: new Date(),
-        };
+        const reportDoc = await db.collection(COLLECTION).doc(id).get();
+        if (!reportDoc.exists) return null;
+        
+        const reportData = reportDoc.data();
+        const updateData: any = { status, updatedAt: new Date() };
         if (comment) updateData.statusComment = comment;
 
         await db.collection(COLLECTION).doc(id).update(updateData);
+
+        if (reportData && reportData.userId) {
+            let baslik = "Şikayet Durumu Güncellendi";
+            if (status === 'RESOLVED') baslik = "Şikayetiniz Çözüldü!";
+            
+            await this.createNotification(
+                reportData.userId, 
+                baslik, 
+                `Şikayetinizin durumu '${status}' olarak güncellenmiştir.`
+            );
+        }
+
         return this.getReportById(id);
+    }
+
+    /**
+     * 4. BİLDİRİMLERİ GETİR
+     */
+    async getMyNotifications(userId: string) {
+        const db = getFirestore();
+        try {
+            const snapshot = await db.collection('notifications')
+                .where('userId', '==', userId)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
+                };
+            });
+        } catch (error) {
+            console.error("Bildirim çekme hatası:", error);
+            return [];
+        }
+    }
+
+    /**
+     * 5. MERKEZİ BİLDİRİM OLUŞTURUCU
+     */
+    private async createNotification(userId: string, title: string, message: string) {
+        try {
+            const db = getFirestore();
+            await db.collection('notifications').add({
+                userId, title, message, isRead: false, createdAt: new Date()
+            });
+        } catch (error) {
+            console.error(`❌ Bildirim yazılamadı:`, error);
+        }
+    }
+
+    async markAsRead(id: string) {
+        const db = getFirestore();
+        await db.collection('notifications').doc(id).update({ isRead: true, updatedAt: new Date() });
+        return { success: true };
+    }
+
+    async markAllAsRead(userId: string) {
+        const db = getFirestore();
+        const snapshot = await db.collection('notifications').where('userId', '==', userId).where('isRead', '==', false).get();
+        const batch = db.batch();
+        snapshot.docs.forEach((doc) => batch.update(doc.ref, { isRead: true }));
+        await batch.commit();
+        return { success: true };
+    }
+
+    async deleteNotification(id: string) {
+        const db = getFirestore();
+        await db.collection('notifications').doc(id).delete();
+        return { success: true };
+    }
+
+    async getMyReports(userId: string) {
+        const db = getFirestore();
+        const snapshot = await db.collection(COLLECTION).where('userId', '==', userId).orderBy('createdAt', 'desc').get();
+        return snapshot.docs.map(doc => this._formatReport(doc));
+    }
+
+    async getAllReports() {
+        const db = getFirestore();
+        const snapshot = await db.collection(COLLECTION).orderBy('createdAt', 'desc').get();
+        return snapshot.docs.map(doc => this._formatReport(doc));
+    }
+
+    async getReportById(id: string) {
+        const db = getFirestore();
+        const doc = await db.collection(COLLECTION).doc(id).get();
+        return doc.exists ? this._formatReport(doc) : null;
+    }
+
+    async updateReportCategory(id: string, category: string) {
+        const db = getFirestore();
+        await db.collection(COLLECTION).doc(id).update({ 
+            category: category, 
+            updatedAt: new Date() 
+        });
+        return { success: true };
+    }
+
+    private _formatReport(doc: any) {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+        };
     }
 }

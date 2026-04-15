@@ -2,6 +2,7 @@ import { getAuth, getFirestore } from '../../config/firebase';
 import { UpdateProfileDto } from './dto';
 
 export class UserService {
+    
     /**
      * Get user profile with statistics
      */
@@ -24,7 +25,7 @@ export class UserService {
 
             const totalReports = reportsSnapshot.size;
             const resolvedReports = reportsSnapshot.docs.filter(
-                doc => doc.data().status === 'resolved' || doc.data().status === 'completed'
+            doc => doc.data().status?.toUpperCase() === 'RESOLVED' || doc.data().status?.toUpperCase() === 'COMPLETED'
             ).length;
 
             // Get survey participation count
@@ -80,6 +81,8 @@ export class UserService {
             throw error;
         }
     }
+    
 }
+
 
 export const userService = new UserService();

@@ -135,6 +135,7 @@ class UserController {
             next(error);
         }
     }
+    
 }
 
 export const userController = new UserController();

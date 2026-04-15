@@ -1,217 +1,218 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; 
-
-// 1. Bildirim Veri Modeli
-class NotificationItem {
-  final String titleKey;
-  final String bodyKey;
-  final DateTime time;
-  final IconData icon;
-  final Color iconColor;
-  bool isRead; // Değiştirilebilir
-  final String type; 
-
-  NotificationItem({
-    required this.titleKey,
-    required this.bodyKey,
-    required this.time,
-    required this.icon,
-    required this.iconColor,
-    this.isRead = false,
-    required this.type,
-  });
-}
-
-// Zamanı okunaklı hale getiren fonksiyon
-String formatNotificationTime(DateTime time) {
-  final duration = DateTime.now().difference(time);
-  if (duration.inMinutes < 60) {
-    return 'notif_mins_ago'.tr(args: [duration.inMinutes.toString()]);
-  } else if (duration.inHours < 24) {
-    return 'notif_hours_ago'.tr(args: [duration.inHours.toString()]);
-  } else {
-    return 'notif_days_ago'.tr(args: [duration.inDays.toString()]);
-  }
-}
+import 'package:easy_localization/easy_localization.dart';
+import '../services/notification_service.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
-
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  // Bildirimleri silebilmemiz için listeyi State içine alıp "late" ile tanımlıyoruz
-  late List<NotificationItem> myNotifications;
+  final NotificationService _notifService = NotificationService();
+  List<dynamic> _notifications = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Sayfa açıldığında örnek verileri listemize yüklüyoruz
-    myNotifications = [
-      NotificationItem(
-        titleKey: 'notif_dummy_title_1',
-        bodyKey: 'notif_dummy_body_1',
-        time: DateTime.now().subtract(const Duration(minutes: 5)),
-        icon: Icons.pending_actions,
-        iconColor: Colors.orange,
-        isRead: false, 
-        type: 'şikayet',
-      ),
-      NotificationItem(
-        titleKey: 'notif_dummy_title_2',
-        bodyKey: 'notif_dummy_body_2',
-        time: DateTime.now().subtract(const Duration(hours: 2)),
-        icon: Icons.calendar_month,
-        iconColor: Colors.blue,
-        isRead: false, 
-        type: 'etkinlik',
-      ),
-      NotificationItem(
-        titleKey: 'notif_dummy_title_3',
-        bodyKey: 'notif_dummy_body_3',
-        time: DateTime.now().subtract(const Duration(days: 1)),
-        icon: Icons.check_circle,
-        iconColor: Colors.green,
-        isRead: true, 
-        type: 'şikayet',
-      ),
-      NotificationItem(
-        titleKey: 'notif_dummy_title_4',
-        bodyKey: 'notif_dummy_body_4',
-        time: DateTime.now().subtract(const Duration(days: 3)),
-        icon: Icons.info,
-        iconColor: Colors.grey,
-        isRead: true, 
-        type: 'genel',
-      ),
-    ];
+    _fetchLiveNotifications(); 
+  }
+
+  Future<void> _fetchLiveNotifications() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final data = await _notifService.getMyNotifications();
+      if (mounted) {
+        setState(() {
+          _notifications = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- KATEGORİ İSİMLERİNİ ÇEVİREN FONKSİYON ---
+  String _getCategoryTitle(String category) {
+    String key = category.trim().toUpperCase();
+    switch (key) {
+      case 'YANGIN': return 'cat_fire'.tr();
+      case 'GAZ KAÇAĞI': return 'cat_gas'.tr();
+      case 'SU PATLAĞI': return 'cat_water'.tr();
+      case 'ELEKTRİK ARIZASI': return 'cat_electric_urgent'.tr();
+      case 'CUKUR': return 'cat_pothole'.tr();
+      case 'COPLUK': return 'cat_garbage'.tr();
+      case 'KIRIK_BANK': return 'cat_bench'.tr();
+      case 'TRAFIK': return 'cat_traffic'.tr();
+      case 'ELEKTRIK': return 'cat_electric'.tr();
+      case 'SCOOTER': return 'cat_scooter'.tr();
+      case 'POSTER': return 'cat_poster'.tr();
+      case 'AGAC': return 'cat_tree'.tr();
+      default: return category;
+    }
+  }
+
+  // --- BAŞLIKLARI ÇEVİREN FONKSİYON ---
+  String _getLocalizedTitle(String rawTitle) {
+    String t = rawTitle.toUpperCase();
+    if (t.contains('ACİL') || t.contains('URGENT') || t.contains('🚨')) {
+      return 'notif_title_urgent'.tr();
+    }
+    if (t.contains('ALINDI') || t.contains('RECEIVED')) {
+      return 'notif_title_received'.tr();
+    }
+    if (t.contains('İŞLEME') || t.contains('PROCESSED')) {
+      return 'notif_title_processed'.tr();
+    }
+    if (t.contains('OLUŞTURULDU') || t.contains('CREATED')) {
+      return 'notif_title_created'.tr();
+    }
+    if (t.contains('ÇÖZÜLDÜ') || t.contains('RESOLVED')) {
+      return 'notif_title_resolved'.tr();
+    }
+    return rawTitle; 
+  }
+
+  // --- 🌟 YENİ: MESAJLARI (CÜMLELERİ) AKILLI ÇEVİREN FONKSİYON ---
+  String _getLocalizedMessage(String rawMessage) {
+    String m = rawMessage;
+
+    // 1. Yeni Şikayet Kalıbı: "... konulu şikayetiniz sisteme kaydedildi..."
+    if (m.contains('sisteme kaydedildi') && !m.contains('acil')) {
+      String cat = m.split(' konulu').first.trim(); // "CUKUR", "ELEKTRIK" vb. yakalar
+      return 'notif_msg_created'.tr(args: [_getCategoryTitle(cat)]);
+    }
+
+    // 2. Durum Değişikliği Kalıbı: "... durumu Resolved olarak güncellenmiştir"
+    if (m.contains('durumu') && m.contains('güncellenmiştir')) {
+      if (m.contains('RESOLVED') || m.contains('Çözüldü') || m.contains('COMPLETED')) {
+        return 'notif_msg_status_resolved'.tr();
+      } else if (m.contains('IN_PROGRESS') || m.contains('İşlemde')) {
+        return 'notif_msg_status_in_progress'.tr();
+      }
+      return 'notif_msg_status_updated'.tr();
+    }
+
+    // 3. Kuruma İletildi Kalıbı: "Şikayetiniz ilgili kuruma (...) iletildi."
+    if (m.contains('ilgili kuruma') && m.contains('iletildi')) {
+      String inst = "";
+      if (m.contains('(') && m.contains(')')) {
+        inst = m.substring(m.indexOf('(') + 1, m.indexOf(')')); // "(TEDAŞ)" içindeki TEDAŞ'ı alır
+      }
+      return 'notif_msg_assigned'.tr(args: [inst]);
+    }
+
+    // 4. Acil Durum Kalıbı: "... ihbarınız sistemimize acil koduyla kaydedildi..."
+    if (m.contains('acil koduyla')) {
+      String cat = m.split(' ihbarınız').first.trim();
+      return 'notif_msg_urgent'.tr(args: [_getCategoryTitle(cat)]);
+    }
+
+    // Hiçbir kalıba uymazsa son çare eski metot
+    m = m.replaceAll("'RESOLVED'", 'status_resolved'.tr());
+    m = m.replaceAll("RESOLVED", 'status_resolved'.tr());
+    m = m.replaceAll("'IN_PROGRESS'", 'status_in_progress'.tr());
+    m = m.replaceAll("IN_PROGRESS", 'status_in_progress'.tr());
+    m = m.replaceAll("'PENDING'", 'status_new'.tr());
+    m = m.replaceAll("PENDING", 'status_new'.tr());
+
+    return m;
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Okunmamışları en üste alacak şekilde sıralıyoruz
-    myNotifications.sort((a, b) => a.isRead == b.isRead ? b.time.compareTo(a.time) : (a.isRead ? 1 : -1));
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('notif_title'.tr(), style: const TextStyle(color: Colors.white)),
+        title: Text('notif_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          // Sadece bildirim varsa "Tümünü Oku" butonunu göster
-          if (myNotifications.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  for (var notif in myNotifications) {
-                    notif.isRead = true;
-                  }
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('notif_read_all_snack'.tr())),
-                );
-              },
-              child: Text('notif_read_all'.tr(), style: const TextStyle(color: Colors.white)),
-            ),
+          IconButton(
+            icon: const Icon(Icons.done_all, color: Colors.white),
+            onPressed: () async {
+              await _notifService.markAllAsRead(); 
+              _fetchLiveNotifications(); 
+            },
+            tooltip: 'notif_mark_all'.tr(),
+          )
         ],
       ),
-      
-      // 1. BOŞ DURUM (EMPTY STATE) KONTROLÜ
-      body: myNotifications.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_paused, size: 80, color: isDark ? Colors.grey.shade700 : Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    // "Henüz hiç bildiriminiz yok" yazısı (Eğer JSON'da yoksa burayı kendi dil mantığına göre ayarlayabilirsin)
-                    context.locale.languageCode == 'tr' ? "Henüz hiç bildiriminiz yok." : "You have no notifications yet.",
-                    style: TextStyle(fontSize: 16, color: isDark ? Colors.grey.shade500 : Colors.grey.shade600),
-                  ),
-                ],
+      body: RefreshIndicator(
+        onRefresh: _fetchLiveNotifications,
+        child: _isLoading 
+            ? const Center(child: CircularProgressIndicator())
+            : _notifications.isEmpty
+            ? Center(child: Text('notif_empty'.tr()))
+            : ListView.builder(
+                itemCount: _notifications.length,
+                itemBuilder: (context, index) {
+                  final notif = _notifications[index];
+                  final String id = notif['id']?.toString() ?? '';
+                  bool isRead = notif['isRead'] ?? false;
+                  
+                  String rawTitle = notif['title']?.toString() ?? '';
+                  String message = notif['message']?.toString() ?? '';
+
+                  bool isUrgentNotif = rawTitle.toUpperCase().contains('ACİL') || rawTitle.contains('🚨');
+
+                  return Dismissible(
+                    key: Key(id),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      color: Colors.red,
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    onDismissed: (direction) async {
+                      await _notifService.deleteNotification(id); 
+                      setState(() => _notifications.removeAt(index));
+                    },
+                    child: Container(
+                      color: isUrgentNotif && !isRead 
+                          ? Colors.red.withOpacity(0.08) 
+                          : (isRead ? Colors.transparent : Colors.blue.withOpacity(0.05)),
+                      child: ListTile(
+                        leading: Container(
+                          width: 4, height: 40, 
+                          color: isRead ? Colors.transparent : (isUrgentNotif ? Colors.red : Colors.blue)
+                        ),
+                        title: Text(
+                          _getLocalizedTitle(rawTitle), 
+                          style: TextStyle(
+                            fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                            color: isUrgentNotif ? Colors.red.shade700 : (isDark ? Colors.white : Colors.black87),
+                          )
+                        ),
+                        subtitle: Text(
+                          _getLocalizedMessage(message), // 🌟 AKILLI MESAJ ÇEVİRİSİ KULLANILIYOR
+                          style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.black54, fontSize: 13)
+                        ),
+                        trailing: Icon(
+                          isUrgentNotif 
+                              ? Icons.warning 
+                              : (rawTitle.contains('Çözüldü') ? Icons.check_circle : Icons.notifications_active),
+                          color: isUrgentNotif 
+                              ? Colors.red 
+                              : (rawTitle.contains('Çözüldü') ? Colors.green : Colors.orange),
+                        ),
+                        onTap: () async {
+                          if (!isRead) {
+                            await _notifService.markAsRead(id); 
+                            setState(() => notif['isRead'] = true); 
+                          }
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
-            )
-          : ListView.builder(
-              itemCount: myNotifications.length,
-              itemBuilder: (context, index) {
-                final notification = myNotifications[index];
-                
-                // 2. KAYDIRARAK SİLME (DISMISSIBLE) EKLENDİ
-                return Dismissible(
-                  key: Key(notification.titleKey + notification.time.toString()),
-                  direction: DismissDirection.endToStart, // Sadece sağdan sola kaydırma
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    color: Colors.red,
-                    child: const Icon(Icons.delete, color: Colors.white, size: 30),
-                  ),
-                  onDismissed: (direction) {
-                    setState(() {
-                      myNotifications.removeAt(index);
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(context.locale.languageCode == 'tr' ? 'Bildirim silindi' : 'Notification deleted'),
-                        action: SnackBarAction(
-                          label: 'OK',
-                          onPressed: () {},
-                        ),
-                      ),
-                    );
-                  },
-                  child: Column(
-                    children: [
-                      Container(
-                        // Okunmamışsa arka planı çok hafif renklendiriyoruz (Daha profesyonel durur)
-                        color: notification.isRead 
-                            ? Colors.transparent 
-                            : (isDark ? Colors.blue.withOpacity(0.05) : Colors.blue.withOpacity(0.03)),
-                        child: ListTile(
-                          leading: Container(
-                            width: 5,
-                            height: double.infinity,
-                            color: notification.isRead ? Colors.transparent : Colors.blue.shade600,
-                            margin: const EdgeInsets.only(right: 10),
-                          ),
-                          title: Text(
-                            notification.titleKey.tr(),
-                            style: TextStyle(
-                              fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 4),
-                              Text(notification.bodyKey.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700)),
-                              const SizedBox(height: 4),
-                              Text(
-                                formatNotificationTime(notification.time),
-                                style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade500 : Colors.grey.shade500),
-                              ),
-                            ],
-                          ),
-                          trailing: Icon(notification.icon, color: notification.iconColor),
-                          onTap: () {
-                            setState(() {
-                              notification.isRead = true;
-                            });
-                          },
-                        ),
-                      ),
-                      const Divider(height: 1), 
-                    ],
-                  ),
-                );
-              },
-            ),
+      ),
     );
   }
 }

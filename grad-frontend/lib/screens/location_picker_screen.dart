@@ -65,8 +65,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.akilli_belediye.app',
+                      urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                      subdomains: const ['a', 'b', 'c', 'd'], // CartoDB'nin alt sunucuları (Hızlı yüklenmesi için)
+                      userAgentPackageName: 'com.merve.akillibelediye', 
                     ),
                     MarkerLayer(
                       markers: [
