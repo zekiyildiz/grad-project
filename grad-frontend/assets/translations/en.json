@@ -633,6 +633,9 @@
   "notif_msg_assigned": "Your complaint has been forwarded to the relevant institution ({}).",
   "notif_msg_urgent": "Your {} report has been recorded with an urgent code and forwarded to the teams.",
 
-  "citizen_priority": "CITIZEN PRIORITY"
+  "citizen_priority": "CITIZEN PRIORITY",
+
+  "view_all": "View All >",
+  "announcement_empty": "No announcements yet"
 
 }

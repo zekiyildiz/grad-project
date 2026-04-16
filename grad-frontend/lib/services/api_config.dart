@@ -10,7 +10,8 @@ class ApiConfig {
     }
     try {
       if (Platform.isAndroid) {
-        return 'http://10.0.2.2:3001';
+         // EĞER GERÇEK TELEFON KULLANIYORSAN (Kendi IP'ni yazmalısın):
+       return 'http://10.0.2.2:3001';
       }
     } catch (e) {
       // Fallback for platforms where Platform.isAndroid points to something else
@@ -41,4 +42,7 @@ class ApiConfig {
 
   // Health check
   static String get healthUrl => '$baseUrl/health';
+
+  // Announcements endpoints
+  static String get announcementsUrl => '$apiUrl/announcements';
 }

@@ -633,6 +633,9 @@
   "notif_msg_assigned": "Şikayetiniz ilgili kuruma ({}) iletildi.",
   "notif_msg_urgent": "{} ihbarınız sistemimize acil koduyla kaydedildi ve ekiplere iletildi.",
 
-  "citizen_priority": "VATANDAŞ ÖNCELİKLİ"
+  "citizen_priority": "VATANDAŞ ÖNCELİKLİ",
+
+  "view_all": "Tümü >",
+  "announcement_empty": "Henüz duyuru yok"
 
 }
