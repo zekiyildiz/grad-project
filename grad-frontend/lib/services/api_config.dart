@@ -10,7 +10,7 @@ class ApiConfig {
     }
     try {
       if (Platform.isAndroid) {
-         // EĞER GERÇEK TELEFON KULLANIYORSAN (Kendi IP'ni yazmalısın):
+        // Emulator için bu adresi kullanın, fiziksel cihazlarda ip adresini manuel olarak girmeniz gerek. 
        return 'http://10.0.2.2:3001';
       }
     } catch (e) {

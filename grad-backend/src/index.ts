@@ -3,6 +3,9 @@ import authRoutes from './modules/auth/routes';
 import userRoutes from './modules/users/routes';
 import reportRoutes from './modules/reports/routes';
 
+// 1. Önce import et (Dosya yolunun doğru olduğundan emin ol)
+import announcementRoutes from './modules/announcement/announcement.routes';
+
 // 🌟 YENİ EKLENEN İMPORTLAR (Multer ve Dosya Sistemi)
 import multer from 'multer';
 import path from 'path';
@@ -13,6 +16,9 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/reports', reportRoutes);
+
+// 2. Buraya duyuru rotasını tekrar bağla 🌟
+router.use('/announcements', announcementRoutes);
 
 // ==========================================
 // 🌟 YENİ EKLENDİ: RESİM YÜKLEME (UPLOAD) API
