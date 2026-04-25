@@ -16,9 +16,9 @@ class VisionService {
   Future<void> loadModel() async {
     if (!isLoaded) {
       await vision.loadYoloModel(
-        modelPath: 'assets/model/best_float32.tflite', // Model dosyan
-        labels: 'assets/model/labels.txt', // Etiket dosyan
-        modelVersion: "yolov8", // YOLOv8/v11 modelleri için standart
+        modelPath: 'assets/model/best_float32.tflite', // Model dosyası
+        labels: 'assets/model/labels.txt', // Etiket dosyası
+        modelVersion: "yolov8", // YOLOv8 modelleri için standart
         quantization: false, // float32 kullandığımız için false
         numThreads: 1, // İşlemci kullanım ayarı
         useGpu:
@@ -40,13 +40,14 @@ class VisionService {
     final imageHeight = frameInfo.image.height;
     final imageWidth = frameInfo.image.width;
 
+print("🚀🚀🚀 DİKKAT: YENİ KOD VE YENİ MODEL ÇALIŞIYOR! EŞİK 0.20 🚀🚀🚀");
     // Tahmin işlemini başlat
     final result = await vision.yoloOnImage(
       bytesList: imageBytes,
       imageHeight: imageHeight,
       imageWidth: imageWidth,
       iouThreshold: 0.45, // Kutu çakışma hassasiyeti
-      confThreshold: 0.40, // Güven eşiği (%40 altını görmezden gel)
+      confThreshold: 0.2, // Güven eşiği 
     );
 
     if (result.isNotEmpty) {

@@ -133,7 +133,6 @@
   "edit_prof_phone_label": "Phone Number",
   "edit_prof_phone_err_empty": "Please enter a phone number",
   "edit_prof_phone_err_zero": "Please enter without leading 0",
-  "edit_prof_phone_err_length": "Number must be 10 digits (e.g., 5XX...)",
   "edit_prof_address_label": "Address",
   "edit_prof_address_err_empty": "Address cannot be empty",
   "edit_prof_save_btn": "Save Changes",
@@ -555,7 +554,6 @@
   "time_day": "day",
   "time_new": "New",
 
-  "inst_park_bahce": "Parks and Gardens Directorate",
   "inst_fen": "Science Affairs Dept.",
   "inst_tedas": "EnerjiSA / TEDAŞ",
   "inst_aski": "Ankara ASKİ",
@@ -636,6 +634,52 @@
   "citizen_priority": "CITIZEN PRIORITY",
 
   "view_all": "View All >",
-  "announcement_empty": "No announcements yet"
+  "announcement_empty": "No announcements yet",
+
+  "login_required_title": "Login Required",
+  "login_required_desc": "You need to log in to use this feature and prevent spam actions.",
+
+  "filter_ongoing": "Ongoing",
+
+  "edit_prof_err_required": "This field is required.",
+  "edit_prof_err_required_map": "This field is required. Please select from the map.",
+  "edit_prof_phone_err_length": "Phone number must be {} digits long.",
+
+  "edit_prof_security_notice": "Due to security protocols, your name, surname, and email cannot be changed.",
+  "edit_prof_name_tooltip": "Name and surname are locked to ensure the validity of official complaints.",
+  "edit_prof_email_tooltip": "Your email address is your digital identity. It is locked to prevent security breaches.",
+
+  "edit_prof_info_title": "Information",
+  "ok_btn": "OK",
+
+  "inst_police_fire": "Police & Fire Dept.",
+  "inst_manual_label": "Enter Institution Name",
+  "inst_other_manual": "Other (Manual)",
+
+  "inst_ukome": "UKOME (Transport Coord.)", 
+  "inst_park_bahce": "Parks & Gardens Dept.",
+
+  "banner_1_title": "Central Library is at Your Service 24/7",
+  "banner_1_desc": "Our libraries never close for our students during exam weeks! We are with you with free Wi-Fi, quiet study areas, and night soup service.",
+  "banner_2_title": "New Metro Line on Test Drive",
+  "banner_2_desc": "Test drives continue successfully on our new metro line, which will ease urban transportation. It will be opened to citizens very soon.",
+  "banner_3_title": "In Touch with Nature: New Living Spaces",
+  "banner_3_desc": "We are expanding our green areas! Our new city park, full of sports and activity areas where you can have a pleasant time with your family, is now open.",
+
+  "admin_regional_crisis_map": "Regional Crisis Map",
+  "admin_crisis_with_percent": "{} Crises ({}%)",
+  "admin_task_with_percent": "{} Tasks ({}%)",
+  "loc_manual": "CENTER / MANUAL",
+  "loc_unknown": "UNKNOWN REGION",
+
+  "manual_loc_selected": "SELECTED LOCATION",
+  "manual_loc_hint": "Select a location from the map...",
+  "manual_loc_not_found": "Address not found",
+  "manual_loc_extra": "EXTRA DETAILS (Optional)",
+  "manual_loc_extra_hint": "Building no, floor, apartment, etc...",
+  "manual_loc_btn": "CONFIRM LOCATION & SEND",
+  "manual_loc_error": "Please select a location from the map.",
+
+  "emerg_dialog_error_empty": "Please describe the situation"
 
 }

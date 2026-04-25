@@ -49,22 +49,17 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
     try {
       final realReports = await _reportService.getAllReports(); 
       for (var report in realReports) {
-        
-        // Fotoğraf URL'sini akıllıca yakala
         String? imageUrl;
         if (report['imageUrls'] != null && report['imageUrls'] is List && report['imageUrls'].isNotEmpty) {
-          imageUrl = report['imageUrls'][0].toString(); // Vatandaş uygulamasından gelen dizi formatı
+          imageUrl = report['imageUrls'][0].toString();
         } else if (report['images'] != null && report['images'] is List && report['images'].isNotEmpty) {
-          imageUrl = report['images'][0].toString(); // Alternatif dizi formatı
+          imageUrl = report['images'][0].toString(); 
         } else if (report['imageUrl'] != null) {
-          imageUrl = report['imageUrl'].toString(); // Tekil URL formatı
+          imageUrl = report['imageUrl'].toString(); 
         } else if (report['image'] != null) {
-          imageUrl = report['image'].toString(); // Alternatif isim
-        } else if (report['image_url'] != null) {
-          imageUrl = report['image_url'].toString(); // Backend/Acil formatı
+          imageUrl = report['image'].toString(); 
         }
 
-        // 🌟 DÜZELTME: isUrgent bilgisini hem boolean hem string olarak güvenle okuyoruz
         bool isUrgentFlag = report['isUrgent'] == true || report['isUrgent'].toString() == 'true';
 
         combinedList.add({
@@ -77,8 +72,8 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
           'timeStr': _formatDate(report['createdAt']),
           'createdAt': report['createdAt'],
           'status': report['status']?.toString() ?? 'PENDING',
-          'assignedInstitution': report['assignedInstitution']?.toString().toUpperCase().replaceAll('INST_', '') ?? '', 
-          'isUrgent': isUrgentFlag, // Artık kesinlikle doğru çalışacak
+          'assignedInstitution': report['assignedInstitution']?.toString() ?? '', 
+          'isUrgent': isUrgentFlag, 
         });
       }
     } catch (e) { debugPrint("Fetch error: $e"); }
@@ -86,21 +81,48 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
   }
 
   String _getInstitutionName(String? code) {
-    if (code == null || code.isEmpty || code == 'ATANMADI') return 'inst_unassigned'.tr();
-    String cleanCode = code.toUpperCase().replaceAll('INST_', '');
-    switch (cleanCode) {
-      case 'FEN_ISLERI': return 'inst_fen'.tr();
-      case 'TEDAS': return 'inst_tedas'.tr(); 
-      case 'ASKI': return 'inst_aski'.tr(); 
-      case 'ZABITA': return 'inst_zabita'.tr();
-      case 'TEMIZLIK': return 'inst_temizlik'.tr();
-      case 'EMNIYET': return 'inst_emniyet'.tr();
-      default: return 'inst_other'.tr();
-    }
+  if (code == null || code.isEmpty || code == 'ATANMADI' || code == 'PENDING' || code == 'STATUS_PENDING') return 'inst_unassigned'.tr();
+  
+  String cleanCode = code.toUpperCase().replaceAll('INST_', '');
+  
+  switch (cleanCode) {
+    case 'FEN_ISLERI': return 'inst_fen'.tr();
+    case 'TEDAS': return 'inst_tedas'.tr(); 
+    case 'ASKI': return 'inst_aski'.tr(); 
+    case 'ZABITA': return 'inst_zabita'.tr();
+    case 'TEMIZLIK': return 'inst_temizlik'.tr();
+    case 'EMNIYET': return 'inst_police_fire'.tr();
+    case 'UKOME': return 'inst_ukome'.tr(); 
+    case 'PARK_BAHCE': return 'inst_park_bahce'.tr(); 
+    case 'DIGER': return 'inst_other_manual'.tr(); 
+    default: return code; 
+  }
+}
+
+  String _predictInstitution(String category) {
+    String cat = category.toUpperCase().replaceAll('İ', 'I').replaceAll('Ç', 'C').replaceAll('Ş', 'S').replaceAll('Ğ', 'G').replaceAll('Ü', 'U').replaceAll('Ö', 'O');
+    
+    if (cat.contains('YANGIN')) return 'EMNIYET';
+    if (cat.contains('GAZ') || cat.contains('ELEKTRIK')) return 'TEDAS';
+    if (cat.contains('SU')) return 'ASKI';
+    if (cat.contains('COP') || cat.contains('TEMIZLIK')) return 'TEMIZLIK';
+    
+    // Trafik artık UKOME'ye gidecek
+    if (cat.contains('TRAFIK')) return 'UKOME';
+    
+    // Ağaç ve Bank artık Park Bahçeler'e gidecek
+    if (cat.contains('AGAC') || cat.contains('BANK')) return 'PARK_BAHCE';
+    
+    // Scooter ve Afiş/Poster Zabıta'da kalacak
+    if (cat.contains('SCOOTER') || cat.contains('POSTER') || cat.contains('AFIS')) return 'ZABITA';
+    
+    return 'FEN_ISLERI';
   }
 
   void _showAssignmentDialog(BuildContext context, Map<String, dynamic> task) {
     String currentSelection = _predictInstitution(task['categoryRaw'].toString());
+    final TextEditingController _customController = TextEditingController();
+    bool _isOther = false;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
@@ -111,27 +133,56 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
             backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text("admin_assign_title".tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-            content: DropdownButtonFormField<String>(
-              value: currentSelection,
-              dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              items: [
-                DropdownMenuItem(value: 'FEN_ISLERI', child: Text('inst_fen'.tr())),
-                DropdownMenuItem(value: 'TEDAS', child: Text('inst_tedas'.tr())), 
-                DropdownMenuItem(value: 'ASKI', child: Text('inst_aski'.tr())),  
-                DropdownMenuItem(value: 'ZABITA', child: Text('inst_zabita'.tr())),
-                DropdownMenuItem(value: 'TEMIZLIK', child: Text('inst_temizlik'.tr())),
-                DropdownMenuItem(value: 'EMNIYET', child: Text('inst_emniyet'.tr())),
-              ],
-              onChanged: (val) => setDialogState(() => currentSelection = val!),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _isOther ? 'DIGER' : (['FEN_ISLERI', 'TEDAS', 'ASKI', 'ZABITA', 'TEMIZLIK', 'EMNIYET', 'UKOME', 'PARK_BAHCE'].contains(currentSelection) ? currentSelection : 'FEN_ISLERI'),
+                    dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    items: [
+                      DropdownMenuItem(value: 'FEN_ISLERI', child: Text('inst_fen'.tr())),
+                      DropdownMenuItem(value: 'TEDAS', child: Text('inst_tedas'.tr())), 
+                      DropdownMenuItem(value: 'ASKI', child: Text('inst_aski'.tr())),  
+                      DropdownMenuItem(value: 'ZABITA', child: Text('inst_zabita'.tr())),
+                      DropdownMenuItem(value: 'TEMIZLIK', child: Text('inst_temizlik'.tr())),
+                      DropdownMenuItem(value: 'EMNIYET', child: Text('inst_police_fire'.tr())),
+                      DropdownMenuItem(value: 'UKOME', child: Text('inst_ukome'.tr())), 
+                      DropdownMenuItem(value: 'PARK_BAHCE', child: Text('inst_park_bahce'.tr())), 
+                      DropdownMenuItem(value: 'DIGER', child: Text('inst_other_manual'.tr())),
+                    ],
+                    onChanged: (val) {
+                      setDialogState(() {
+                        currentSelection = val!;
+                        _isOther = (val == 'DIGER');
+                      });
+                    },
+                  ),
+                  if (_isOther) ...[
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: _customController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: "inst_manual_label".tr(),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: Text('cancel'.tr())),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
                 onPressed: () async {
+                  String finalInst = _isOther ? _customController.text.trim() : currentSelection;
+                  if (_isOther && finalInst.isEmpty) return;
+
                   Navigator.pop(ctx);
-                  await _reportService.assignInstitution(task['id'], currentSelection);
+                  await _reportService.assignInstitution(task['id'], finalInst);
                   _fetchData();
                 },
                 child: Text('btn_assign'.tr(), style: const TextStyle(color: Colors.white)),
@@ -156,277 +207,242 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
     }
   }
 
-  void _showEditCategoryDialog(BuildContext context, Map<String, dynamic> task, bool isDark) {
-    String currentCat = task['categoryRaw'].toString();
-    const validCategories = ['CUKUR', 'KIRIK_BANK', 'COPLUK', 'ELEKTRIK', 'TRAFIK', 'SCOOTER', 'POSTER', 'AGAC', 'DIGER'];
-    if (!validCategories.contains(currentCat)) currentCat = 'DIGER';
-
-    showDialog(
-      context: context,
-      barrierDismissible: false, 
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          bool isUpdating = false; 
-
-          return AlertDialog(
-            backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text("btn_edit_category".tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-            content: DropdownButtonFormField<String>(
-              value: currentCat,
-              dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              items: [
-                DropdownMenuItem(value: 'CUKUR', child: Text('cat_pothole'.tr())),
-                DropdownMenuItem(value: 'KIRIK_BANK', child: Text('cat_bench'.tr())),
-                DropdownMenuItem(value: 'COPLUK', child: Text('cat_garbage'.tr())),
-                DropdownMenuItem(value: 'ELEKTRIK', child: Text('cat_electric'.tr())),
-                DropdownMenuItem(value: 'TRAFIK', child: Text('cat_traffic'.tr())),
-                DropdownMenuItem(value: 'SCOOTER', child: Text('cat_scooter'.tr())),
-                DropdownMenuItem(value: 'POSTER', child: Text('cat_poster'.tr())),
-                DropdownMenuItem(value: 'AGAC', child: Text('cat_tree'.tr())),
-                DropdownMenuItem(value: 'DIGER', child: Text('cat_other'.tr())),
-              ],
-              onChanged: isUpdating ? null : (val) => setDialogState(() => currentCat = val!),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isUpdating ? null : () => Navigator.pop(ctx), 
-                child: Text('cancel'.tr(), style: const TextStyle(color: Colors.grey))
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                onPressed: isUpdating ? null : () async {
-                  setDialogState(() => isUpdating = true); 
-                  try {
-                    await _reportService.updateReportCategory(task['id'], currentCat);
-                    _fetchData(); 
-                    if (context.mounted) {
-                      Navigator.pop(ctx); 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Kategori başarıyla güncellendi!'), backgroundColor: Colors.green)
-                      );
-                    }
-                  } catch (e) {
-                    setDialogState(() => isUpdating = false);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red)
-                      );
-                    }
-                  }
-                },
-                child: isUpdating 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text('home_edit_save'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              )
-            ],
-          );
-        },
-      ),
-    );
+  Future<void> _updateCategory(String taskId, String newCategory) async {
+    try {
+      await _reportService.updateReportCategory(taskId, newCategory);
+      _fetchData(); 
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kategori başarıyla güncellendi!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kategori güncellenemedi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void _showReportDetails(BuildContext context, Map<String, dynamic> item, bool isDark) {
     String rawStatus = item['status']?.toString().toUpperCase() ?? 'PENDING';
-    String assignedTo = item['assignedInstitution']?.toString() ?? '';
-    String? imageUrl = item['imageUrl'];
-
     String rawCat = item['categoryRaw']?.toString().toUpperCase() ?? item['category']?.toString().toUpperCase() ?? '';
 
-    bool isSystemCritical = ['YANGIN', 'GAZ KAÇAĞI', 'SU PATLAĞI', 'ELEKTRİK ARIZASI', 'YOL ÇÖKMESİ'].contains(rawCat);
-    bool isUserUrgent = item['isUrgent'] == true || item['isUrgent'].toString() == 'true';
+    String normalizedCat = rawCat.replaceAll('İ', 'I').replaceAll('Ğ', 'G').replaceAll('Ç', 'C').replaceAll('Ş', 'S').replaceAll('Ö', 'O').replaceAll('Ü', 'U').trim();
 
+    final List<String> normalCategories = [
+      'CUKUR', 'COPLUK', 'KIRIK_BANK', 'TRAFIK', 'ELEKTRIK', 'SCOOTER', 'POSTER', 'AGAC', 'DIGER'
+    ];
+
+    String currentDropdownCategory = normalCategories.contains(normalizedCat) ? normalizedCat : 'DIGER';
+
+    bool isSystemCritical = ['YANGIN', 'GAZ KACAGI', 'SU PATLAGI', 'ELEKTRIK ARIZASI', 'YOL COKMESI'].contains(normalizedCat);
+    bool isUserUrgent = item['isUrgent'] == true;
     bool showAsRed = (isSystemCritical || isUserUrgent) && rawStatus != 'RESOLVED';
+    
+    bool canEditCategory = (rawStatus != 'RESOLVED' && rawStatus != 'COMPLETED') && !isSystemCritical && !isUserUrgent;
+
+    String assignedTo = item['assignedInstitution']?.toString() ?? '';
+    bool isAssigned = assignedTo.isNotEmpty && assignedTo != 'ATANMADI' && assignedTo != 'PENDING' && assignedTo != 'STATUS_PENDING' && assignedTo != 'NULL';
+    String? imageUrl = item['imageUrl'];
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(context).size.height * 0.85, 
-        padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey.shade900 : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(10)))),
-              const SizedBox(height: 20),
-              
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: showAsRed ? Colors.red : Colors.orange.shade100,
-                    radius: 25,
-                    child: Icon(showAsRed ? Icons.warning : Icons.campaign, color: showAsRed ? Colors.white : Colors.orange),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['titleStr'] ?? _getCategoryTitle(rawCat), 
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: showAsRed ? Colors.red : (isDark ? Colors.white : Colors.black87))
-                        ),
-                        Text(item['timeStr'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                      ],
-                    ),
-                  ),
-                  // 🌟 ÇÖZÜM: Kategori Düzenleme Butonu Buraya Geri Döndü!
-                  IconButton(
-                    icon: Icon(Icons.edit, color: isDark ? Colors.white70 : Colors.grey.shade700, size: 28),
-                    onPressed: () {
-                      Navigator.pop(ctx); // Önce detay sayfasını kapatır
-                      _showEditCategoryDialog(context, item, isDark); // Sonra düzenleme kutusunu açar
-                    },
-                  ),
-                ],
-              ),
-              const Divider(height: 30),
-
-              Text('desc_label'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 5),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
-                child: Text(item['description']?.toString() ?? 'desc_empty'.tr(), style: const TextStyle(fontSize: 16)),
-              ),
-              const SizedBox(height: 20),
-
-              Text('loc_exact'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 5),
-              Row(
+      builder: (ctx) => StatefulBuilder( 
+        builder: (BuildContext context, StateSetter setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85, 
+            padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade900 : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.location_on, color: Colors.red, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(item['locStr'] ?? 'loc_unknown'.tr(), style: const TextStyle(fontSize: 15))),
-                ],
-              ),
-              const SizedBox(height: 20),
+                  Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(10)))),
+                  const SizedBox(height: 20),
+                  
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: showAsRed ? Colors.red : Colors.orange.shade100,
+                        radius: 25,
+                        child: Icon(showAsRed ? Icons.warning : Icons.campaign, color: showAsRed ? Colors.white : Colors.orange),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (canEditCategory) 
+                              Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    value: currentDropdownCategory,
+                                    dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
+                                    icon: const Padding(padding: EdgeInsets.only(right: 8.0), child: Icon(Icons.edit, size: 16, color: Colors.blue)),
+                                    items: normalCategories.map((String category) {
+                                      return DropdownMenuItem<String>(
+                                        value: category,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(left: 8.0),
+                                          child: Text(
+                                            _getCategoryTitle(category),
+                                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      if (newValue != null && newValue != currentDropdownCategory) {
+                                        setModalState(() { currentDropdownCategory = newValue; });
+                                        _updateCategory(item['id'], newValue); 
+                                      }
+                                    },
+                                  ),
+                                ),
+                              )
+                            else 
+                              Text(item['titleStr'] ?? _getCategoryTitle(rawCat), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: showAsRed ? Colors.red : (isDark ? Colors.white : Colors.black87))),
+                            
+                            const SizedBox(height: 4),
+                            Text(item['timeStr'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 30),
 
-              // 🌟 GÜNCELLENEN FOTOĞRAF ALANI (ACİLSE VE FOTO YOKSA GİZLER)
-              if (imageUrl != null && imageUrl.isNotEmpty && imageUrl != 'null' || !(isUserUrgent || isSystemCritical)) ...[
-                Text('photo_added'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 5),
-                if (imageUrl != null && imageUrl.isNotEmpty && imageUrl != 'null')
-                  GestureDetector(
-                    onTap: () {
-                       // Resim büyütme diyaloğu kodu buraya gelecek
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.network(
-                        imageUrl, width: double.infinity, height: 200, fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(height: 150, color: Colors.grey.shade300, child: const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey))),
+                  Text('desc_label'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
+                    child: Text(item['description']?.toString() ?? 'desc_empty'.tr(), style: const TextStyle(fontSize: 16)),
+                  ),
+                  const SizedBox(height: 20),
+
+                  Text('loc_exact'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.location_on, color: Colors.red, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(item['locStr'] ?? 'loc_unknown'.tr(), style: const TextStyle(fontSize: 15))),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  const SizedBox(height: 20),
+
+                  if ((imageUrl != null && imageUrl.isNotEmpty && imageUrl != 'null') || !(isSystemCritical || isUserUrgent)) ...[
+                    Text('photo_added'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 5),
+                    if (imageUrl != null && imageUrl.isNotEmpty && imageUrl != 'null')
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.network(
+                          imageUrl, width: double.infinity, height: 200, fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(height: 150, color: Colors.grey.shade300, child: const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey))),
+                        ),
+                      )
+                    else
+                      Container(
+                        width: double.infinity, padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, borderRadius: BorderRadius.circular(15), border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300)),
+                        child: Column(
+                          children: [
+                            Icon(Icons.image_not_supported, color: Colors.grey.shade400, size: 40),
+                            const SizedBox(height: 8),
+                            Text('photo_not_added'.tr(), style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 30),
+                  ],
+
+                  if (isAssigned) ...[
+                    Text('inst_assigned'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.business, color: Colors.blue),
+                          const SizedBox(width: 10),
+                          Text(_getInstitutionName(assignedTo), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
                       ),
                     ),
-                  )
-                else
-                  Container(
-                    width: double.infinity, padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, borderRadius: BorderRadius.circular(15), border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300)),
-                    child: Column(
-                      children: [
-                        Icon(Icons.image_not_supported, color: Colors.grey.shade400, size: 40),
-                        const SizedBox(height: 8),
-                        Text('photo_not_added'.tr(), style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-                      ],
+                    const SizedBox(height: 30),
+                  ],
+
+                  if (rawStatus == 'PENDING')
+                    SizedBox(
+                      width: double.infinity, height: 50,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
+                        onPressed: () { Navigator.pop(ctx); _showAssignmentDialog(context, item); },
+                        icon: const Icon(Icons.send, color: Colors.white),
+                        label: Text('btn_assign_team'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    )
+                  else if (rawStatus == 'IN_PROGRESS')
+                    SizedBox(
+                      width: double.infinity, height: 50,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade600),
+                        onPressed: () { Navigator.pop(ctx); _markAsResolved(item['id']); },
+                        icon: const Icon(Icons.build, color: Colors.white),
+                        label: Text('btn_mark_resolved'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    )
+                  else 
+                    Container(
+                      width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.green)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green, size: 24),
+                          const SizedBox(width: 8),
+                          Text('status_resolved'.tr(), style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
                     ),
-                  ),
-                const SizedBox(height: 30),
-              ],
-
-              if (assignedTo.isNotEmpty) ...[
-                Text('inst_assigned'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 5),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.business, color: Colors.blue),
-                      const SizedBox(width: 10),
-                      Text(_getInstitutionName(assignedTo), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-              ],
-
-              if (rawStatus == 'PENDING')
-                SizedBox(
-                  width: double.infinity, height: 50,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
-                    onPressed: () { Navigator.pop(ctx); _showAssignmentDialog(context, item); },
-                    icon: const Icon(Icons.send, color: Colors.white),
-                    label: Text('btn_assign_team'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                )
-              else if (rawStatus == 'IN_PROGRESS')
-                SizedBox(
-                  width: double.infinity, height: 50,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade600),
-                    onPressed: () { Navigator.pop(ctx); _markAsResolved(item['id']); },
-                    icon: const Icon(Icons.build, color: Colors.white),
-                    label: Text('btn_mark_resolved'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                )
-              else 
-                Container(
-                  width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.green)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.check_circle, color: Colors.green, size: 24),
-                      const SizedBox(width: 8),
-                      Text('status_resolved'.tr(), style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          );
+        }
       ),
     );
   }
 
-  String _predictInstitution(String category) {
-    String cat = category.toUpperCase()
-        .replaceAll('İ', 'I').replaceAll('Ç', 'C').replaceAll('Ş', 'S')
-        .replaceAll('Ğ', 'G').replaceAll('Ü', 'U').replaceAll('Ö', 'O');
-    
-    if (cat.contains('YANGIN')) return 'EMNIYET';
-    if (cat.contains('GAZ') || cat.contains('ELEKTRIK')) return 'TEDAS';
-    if (cat.contains('SU')) return 'ASKI';
-    if (cat.contains('COP') || cat.contains('TEMIZLIK')) return 'TEMIZLIK';
-    if (cat.contains('SCOOTER') || cat.contains('TRAFIK') || cat.contains('POSTER')) return 'ZABITA';
-    return 'FEN_ISLERI';
-  }
-
   String _getCategoryTitle(String category) {
-    // 🌟 ÇÖZÜM: Türkçe karakterleri evrensel karakterlere çeviriyoruz
-    String key = category.trim().toUpperCase()
-        .replaceAll('İ', 'I').replaceAll('Ğ', 'G')
-        .replaceAll('Ç', 'C').replaceAll('Ş', 'S')
-        .replaceAll('Ö', 'O').replaceAll('Ü', 'U');
-        
+    String key = category.trim().toUpperCase().replaceAll('İ', 'I').replaceAll('Ğ', 'G').replaceAll('Ç', 'C').replaceAll('Ş', 'S').replaceAll('Ö', 'O').replaceAll('Ü', 'U');
     switch (key) {
       case 'YANGIN': return 'cat_fire'.tr();
-      case 'GAZ KACAGI': return 'cat_gas'.tr(); // 'Ç' ve 'Ğ' temizlendi
-      case 'SU PATLAGI': return 'cat_water'.tr(); // 'Ğ' temizlendi
-      case 'ELEKTRIK ARIZASI': return 'cat_electric_urgent'.tr(); // 'İ' temizlendi
-      case 'YOL COKMESI': return 'cat_road_collapse'.tr(); // 'Ç' ve 'Ö' temizlendi
+      case 'GAZ KACAGI': return 'cat_gas'.tr(); 
+      case 'SU PATLAGI': return 'cat_water'.tr(); 
+      case 'ELEKTRIK ARIZASI': return 'cat_electric_urgent'.tr(); 
+      case 'YOL COKMESI': return 'cat_road_collapse'.tr(); 
       case 'CUKUR': return 'cat_pothole'.tr();
       case 'COPLUK': return 'cat_garbage'.tr();
       case 'KIRIK_BANK': return 'cat_bench'.tr();
@@ -435,7 +451,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
       case 'SCOOTER': return 'cat_scooter'.tr();
       case 'POSTER': return 'cat_poster'.tr();
       case 'AGAC': return 'cat_tree'.tr();
-      case 'DIGER': return 'cat_other'.tr(); // 🌟 "DİĞER" artık "DIGER" olarak yakalanacak
+      case 'DIGER': return 'cat_other'.tr(); 
       default: return category;
     }
   }
@@ -470,11 +486,11 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
     );
   }
 
-  Widget _buildTrailingWidget(Map<String, dynamic> task, bool isUrgent) {
+  Widget _buildTrailingWidget(Map<String, dynamic> task, bool showAsRed) {
     if (task['status'] == 'PENDING') {
       return ElevatedButton(
         onPressed: () => _showAssignmentDialog(context, task), 
-        style: ElevatedButton.styleFrom(backgroundColor: isUrgent ? Colors.red.shade700 : Colors.orange),
+        style: ElevatedButton.styleFrom(backgroundColor: showAsRed ? Colors.red.shade700 : Colors.orange),
         child: Text('btn_assign_team'.tr(), style: const TextStyle(color: Colors.white, fontSize: 10)),
       );
     } else if (task['status'] == 'IN_PROGRESS') {
@@ -518,8 +534,8 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                   CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.engineering, size: 35, color: Colors.orange)),
-                   SizedBox(height: 10),
+                   const CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.engineering, size: 35, color: Colors.orange)),
+                   const SizedBox(height: 10),
                   Text('employee_app_bar_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),                ],
               ),
             ),
@@ -601,6 +617,10 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                               DropdownMenuItem(value: 'ASKI', child: Text('inst_aski'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                               DropdownMenuItem(value: 'ZABITA', child: Text('inst_zabita'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                               DropdownMenuItem(value: 'TEMIZLIK', child: Text('inst_temizlik'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
+                              DropdownMenuItem(value: 'EMNIYET', child: Text('inst_police_fire'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
+                              DropdownMenuItem(value: 'UKOME', child: Text('inst_ukome'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))), 
+                              DropdownMenuItem(value: 'PARK_BAHCE', child: Text('inst_park_bahce'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))), 
+                              DropdownMenuItem(value: 'DIGER', child: Text('inst_other_manual'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                               DropdownMenuItem(value: 'ATANMADI', child: Text('inst_unassigned'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                             ],
                             onChanged: (val) => setState(() => _instFilter = val!),
@@ -633,21 +653,35 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                       List<Map<String, dynamic>> allTasks = snapshot.data!;
                       
                       List<Map<String, dynamic>> filteredTasks = allTasks.where((task) {
-                        String currentInst = task['assignedInstitution']?.toString() ?? '';
+                        String currentInstRaw = task['assignedInstitution']?.toString() ?? '';
+                        String currentInst = currentInstRaw.toUpperCase().replaceAll('INST_', '');
                         if (currentInst.isEmpty) currentInst = 'ATANMADI';
 
                         if (_onlyUrgent && task['isUrgent'] != true) return false;
                         if (_statusFilter == 'YENİ' && task['status'] != 'PENDING') return false;
                         if (_statusFilter == 'İŞLEMDE' && task['status'] != 'IN_PROGRESS') return false;
                         if (_statusFilter == 'ÇÖZÜLENLER' && task['status'] != 'RESOLVED' && task['status'] != 'COMPLETED') return false;
-                        if (_instFilter != 'TÜMÜ' && currentInst != _instFilter) return false;
+                        
+                        if (_instFilter != 'TÜMÜ') {
+                          List<String> stdInst = ['FEN_ISLERI', 'TEDAS', 'ASKI', 'ZABITA', 'TEMIZLIK', 'EMNIYET', 'UKOME', 'PARK_BAHCE', 'ATANMADI'];
+                          if (_instFilter == 'DIGER') {
+                            if (stdInst.contains(currentInst)) return false; 
+                          } else {
+                            if (currentInst != _instFilter) return false; 
+                          }
+                        }
                         
                         return true;
                       }).toList();
 
-                      if (filteredTasks.isEmpty) {
-                        return Center(child: Text('admin_no_match'.tr(), style: const TextStyle(color: Colors.grey)));
-                      }
+                      // KRONOLOJİK SIRALAMA (EN YENİ EN ÜSTTE)
+                      filteredTasks.sort((a, b) {
+                        DateTime dateA = DateTime.tryParse(a['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+                        DateTime dateB = DateTime.tryParse(b['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+                        return dateB.compareTo(dateA);
+                      });
+
+                      if (filteredTasks.isEmpty) return Center(child: Text('admin_no_match'.tr(), style: const TextStyle(color: Colors.grey)));
 
                       return ListView.builder(
                         padding: const EdgeInsets.all(12),
@@ -656,27 +690,17 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                           final task = filteredTasks[index];
                           
                           String rawStatus = task['status']?.toString().toUpperCase() ?? 'PENDING';
-                          String assignedTo = task['assignedInstitution']?.toString() ?? '';
+                          String assignedTo = task['assignedInstitution']?.toString().toUpperCase().replaceAll('INST_', '') ?? '';
 
                           String rawCat = task['categoryRaw']?.toString().toUpperCase() ?? '';
-                          bool isSystemCritical = ['YANGIN', 'GAZ KAÇAĞI', 'SU PATLAĞI', 'ELEKTRİK ARIZASI'].contains(rawCat);
+                          String normalizedCatList = rawCat.replaceAll('İ', 'I').replaceAll('Ğ', 'G').replaceAll('Ç', 'C').replaceAll('Ş', 'S').replaceAll('Ö', 'O').replaceAll('Ü', 'U').trim();
+                          
+                          bool isSystemCritical = ['YANGIN', 'GAZ KACAGI', 'SU PATLAGI', 'ELEKTRIK ARIZASI', 'YOL COKMESI'].contains(normalizedCatList);
                           bool isUserUrgent = task['isUrgent'] == true;
 
                           bool showAsRed = isSystemCritical || isUserUrgent;
-
-                          String statusText = "";
-                          Color statusColor = Colors.orange;
-
-                          if (rawStatus == 'PENDING') {
-                            statusText = showAsRed ? "status_urgent_pending".tr() : "status_pending".tr();
-                            statusColor = Colors.red;
-                          } else if (rawStatus == 'IN_PROGRESS') {
-                            statusText = "status_sevk".tr();
-                            statusColor = Colors.orange;
-                          } else if (rawStatus == 'RESOLVED' || rawStatus == 'COMPLETED') {
-                            statusText = "status_resolved".tr();
-                            statusColor = Colors.green;
-                          }
+                          
+                          bool isAssigned = assignedTo.isNotEmpty && assignedTo != 'ATANMADI' && assignedTo != 'PENDING' && assignedTo != 'STATUS_PENDING' && assignedTo != 'NULL';
 
                           return Card(
                             elevation: showAsRed ? 6 : (isUserUrgent ? 4 : 2),
@@ -700,13 +724,6 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                     title: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        // 🌟 VATANDAŞ ÖNCELİKLİ ETİKETİ
-                                        if (isUserUrgent && !isSystemCritical && rawStatus != 'RESOLVED')
-                                          Container(
-                                            margin: const EdgeInsets.only(bottom: 4, top: 4),
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(color: Colors.orange.shade600, borderRadius: BorderRadius.circular(4)),
-                                            child: Text('⚠️ ${"citizen_priority".tr()}', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),                                          ),
                                         Text(task['titleStr']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
                                       ],
                                     ),
@@ -716,7 +733,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                     ),
                                     trailing: _buildTrailingWidget(task, showAsRed),
                                   ),
-                                  if (assignedTo.isNotEmpty)
+                                  if (isAssigned && rawStatus != 'PENDING')
                                     Padding(
                                       padding: const EdgeInsets.only(left: 72, bottom: 12, right: 16),
                                       child: Align(
@@ -725,7 +742,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
                                           child: Text(
-                                            "${'inst_label'.tr()}: ${_getInstitutionName(assignedTo)}",
+                                            "${'inst_label'.tr()}: ${_getInstitutionName(assignedTo)}", 
                                             style: const TextStyle(color: Colors.blue, fontSize: 11, fontWeight: FontWeight.bold),
                                           ),
                                         ),

@@ -3,10 +3,9 @@ import authRoutes from './modules/auth/routes';
 import userRoutes from './modules/users/routes';
 import reportRoutes from './modules/reports/routes';
 
-// 1. Önce import et (Dosya yolunun doğru olduğundan emin ol)
 import announcementRoutes from './modules/announcement/announcement.routes';
 
-// 🌟 YENİ EKLENEN İMPORTLAR (Multer ve Dosya Sistemi)
+// Multer ve Dosya Sistemi
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -17,11 +16,11 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/reports', reportRoutes);
 
-// 2. Buraya duyuru rotasını tekrar bağla 🌟
+// Buraya duyuru rotasını tekrar bağla 
 router.use('/announcements', announcementRoutes);
 
 // ==========================================
-// 🌟 YENİ EKLENDİ: RESİM YÜKLEME (UPLOAD) API
+// RESİM YÜKLEME API
 // ==========================================
 
 // 1. Klasör Yoksa Oluştur
@@ -53,7 +52,7 @@ router.post('/upload', upload.single('image'), (req, res) => {
     const protocol = req.protocol;
     const host = req.get('host');
     
-    // Uygulamanın veritabanına kaydedeceği Tam URL (Örn: http://10.0.2.2:3001/uploads/sikayet-123.jpg)
+    // Uygulamanın veritabanına kaydedeceği Tam URL 
     const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
     console.log(`📸 Yeni resim yüklendi: ${imageUrl}`);

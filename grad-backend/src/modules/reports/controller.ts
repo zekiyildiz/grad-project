@@ -48,7 +48,7 @@ export const createReport = async (req: any, res: Response) => {
     try {
         const isUrgentFlag = req.body.isUrgent === true || req.body.isUrgent === 'true';
 
-        // 🌟 ÇÖZÜM: Flutter'dan dağınık gelen konum verilerini "location" kutusunda (objesinde) topluyoruz
+        // Flutter'dan dağınık gelen konum verilerini "location" kutusunda (objesinde) topluyoruz
         const reportData = {
             userId: req.user.uid,
             ...req.body,

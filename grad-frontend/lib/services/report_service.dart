@@ -50,19 +50,19 @@ class ReportService {
     required double latitude,
     required double longitude,
     required String address,
-    required bool isUrgent, // <-- Parametre olarak gelmeli
+    required bool isUrgent, 
     required List<String> imageUrls,
   }) async {
     try {
       await _apiClient.post( // veya http.post
-        ApiConfig.reportsUrl, // Kendi URL yapına göre değişebilir
+        ApiConfig.reportsUrl, 
         body: {
           'category': category,
           'description': description,
           'latitude': latitude,
           'longitude': longitude,
           'address': address,
-          'isUrgent': isUrgent, // 🌟 KRİTİK NOKTA: Bu satır yoksa backend'e gitmez!
+          'isUrgent': isUrgent, // Bu satır yoksa backend'e gitmez
           'imageUrls': imageUrls,
         },
         requireAuth: true,
@@ -90,10 +90,10 @@ class ReportService {
   /// 6. Şikayeti bir kuruma atar
   Future<bool> assignInstitution(String reportId, String institutionCode) async {
     try {
-      await _apiClient.put( // _client veya _apiClient, hangisini kullanıyorsan
+      await _apiClient.put( 
         '${ApiConfig.reportsUrl}/$reportId/assign',
-        body: { // data: veya body: (senin yapına göre)
-          'institutionCode': institutionCode, // DÜZELTME BURADA: Backend'in beklediği isim!
+        body: {
+          'institutionCode': institutionCode, 
           'status': 'IN_PROGRESS', 
         },
         requireAuth: true,
@@ -105,7 +105,6 @@ class ReportService {
   }
   Future<String?> uploadImage(File imageFile) async {
     try {
-      // 1. URL'yi güvenli hale getir. (Senin API yapına göre /api/v1 içermesi gerekebilir)
       String uploadUrl = '${ApiConfig.baseUrl}/upload';
       if (!uploadUrl.contains('/api/v1')) {
          uploadUrl = uploadUrl.replaceFirst('/upload', '/api/v1/upload');

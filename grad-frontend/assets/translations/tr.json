@@ -133,7 +133,6 @@
   "edit_prof_phone_label": "Telefon Numarası",
   "edit_prof_phone_err_empty": "Telefon numarası giriniz",
   "edit_prof_phone_err_zero": "Lütfen başında 0 olmadan giriniz",
-  "edit_prof_phone_err_length": "Numara 10 haneli olmalı (Örn: 5XX...)",
   "edit_prof_address_label": "Adres",
   "edit_prof_address_err_empty": "Adres boş bırakılamaz",
   "edit_prof_save_btn": "Değişiklikleri Kaydet",
@@ -359,7 +358,7 @@
   "emerg_loc_getting": "Konumunuz Alınıyor...",
   "emerg_warning_text": "Lütfen sadece acil müdahale gerektiren durumları seçiniz.",
 
-  "manual_loc_title": "Haritadan Konum Seç",
+  "manual_loc_title": "Haritadan Konum Seçin",
   "manual_loc_err_empty": "Lütfen açık adresinizi de yazınız.",
   "manual_loc_success_title": "İhbar İletildi",
   "manual_loc_success_desc": "{} ihbarınız işaretlediğiniz konum ve adres bilgisiyle iletildi.\n\nSeçilen: {}, {}",
@@ -551,7 +550,6 @@
   "time_day": "gün",
   "time_new": "Yeni",
   "admin_no_records": "Şu an sistemde aktif kayıt bulunmuyor.",
-  "loc_unknown": "Bilinmeyen Konum",
 
   "inst_fen": "Fen İşleri Daire Bşk.",
   "inst_tedas": "EnerjiSA / TEDAŞ",
@@ -636,6 +634,52 @@
   "citizen_priority": "VATANDAŞ ÖNCELİKLİ",
 
   "view_all": "Tümü >",
-  "announcement_empty": "Henüz duyuru yok"
+  "announcement_empty": "Henüz duyuru yok",
+
+  "login_required_title": "Giriş Gerekli",
+  "login_required_desc": "Spam işlemlerin önüne geçmek ve bu özelliği kullanabilmek için giriş yapmalısınız.",
+
+  "filter_ongoing": "Devam Edenler",
+
+  "edit_prof_err_required": "Bu alan zorunludur.",
+  "edit_prof_err_required_map": "Bu alan zorunludur. Lütfen haritadan seçin.",
+  "edit_prof_phone_err_length": "Numara {} haneli olmalıdır.",
+
+  "edit_prof_security_notice": "Güvenlik protokolleri gereği ad, soyad ve e-posta adresiniz değiştirilemez.",
+  "edit_prof_name_tooltip": "Resmi şikayetlerin geçerliliği için ad ve soyad bilgisi kilitlidir.",
+  "edit_prof_email_tooltip": "E-posta adresiniz dijital kimliğinizdir. Hesap güvenliğinin ihlal edilmemesi için kilitlidir.",
+
+  "edit_prof_info_title": "Bilgilendirme",
+  "ok_btn": "Tamam",
+
+  "inst_police_fire": "İl Emniyet / İtfaiye",
+  "inst_manual_label": "Kurum Adı Giriniz",
+  "inst_other_manual": "Diğer (Manuel)",
+
+  "inst_ukome": "UKOME (Ulaşım Koordinasyon)", 
+  "inst_park_bahce": "Park ve Bahçeler Müd.",
+
+  "banner_1_title": "Merkez Kütüphanesi 7/24 Hizmetinizde",
+  "banner_1_desc": "Sınav haftalarında öğrencilerimiz için kütüphanelerimiz hiç kapanmıyor! Ücretsiz Wi-Fi, sessiz çalışma alanları ve gece çorbası ikramımızla yanınızdayız.",
+  "banner_2_title": "Yeni Metro Hattı Test Sürüşünde",
+  "banner_2_desc": "Şehir içi ulaşımı rahatlatacak yeni metro hattımızda test sürüşleri başarıyla devam ediyor. Çok yakında vatandaşlarımızın hizmetine açılacaktır.",
+  "banner_3_title": "Doğayla İç İçe: Yeni Yaşam Alanları",
+  "banner_3_desc": "Yeşil alanlarımızı genişletiyoruz! Ailenizle keyifli vakit geçirebileceğiniz, spor ve etkinlik alanlarıyla dolu yeni kent parkımız ziyarete açıldı.",
+
+  "admin_regional_crisis_map": "Bölgesel Kriz Haritası",
+  "admin_crisis_with_percent": "{} Kriz (%{})",
+  "admin_task_with_percent": "{} İş (%{})",
+  "loc_manual": "MERKEZ / MANUEL",
+  "loc_unknown": "BİLİNMEYEN BÖLGE",
+
+  "manual_loc_selected": "SEÇİLEN KONUM",
+  "manual_loc_hint": "Haritadan bir konum seçin...",
+  "manual_loc_not_found": "Adres bulunamadı",
+  "manual_loc_extra": "EK AÇIKLAMA (İsteğe Bağlı)",
+  "manual_loc_extra_hint": "Bina no, kat, daire veya ek tarif yazabilirsiniz...",
+  "manual_loc_btn": "KONUMU ONAYLA VE GÖNDER",
+  "manual_loc_error": "Lütfen haritadan bir konum seçin.",
+
+  "emerg_dialog_error_empty": "Lütfen durumu açıklayın"
 
 }

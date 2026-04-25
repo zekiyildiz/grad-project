@@ -35,14 +35,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  // --- KATEGORİ İSİMLERİNİ ÇEVİREN FONKSİYON ---
   String _getCategoryTitle(String category) {
-    String key = category.trim().toUpperCase();
+    String key = category.trim().toUpperCase()
+        .replaceAll('İ', 'I').replaceAll('Ğ', 'G')
+        .replaceAll('Ç', 'C').replaceAll('Ş', 'S')
+        .replaceAll('Ö', 'O').replaceAll('Ü', 'U');
+
     switch (key) {
       case 'YANGIN': return 'cat_fire'.tr();
-      case 'GAZ KAÇAĞI': return 'cat_gas'.tr();
-      case 'SU PATLAĞI': return 'cat_water'.tr();
-      case 'ELEKTRİK ARIZASI': return 'cat_electric_urgent'.tr();
+      case 'GAZ KACAGI': return 'cat_gas'.tr();
+      case 'SU PATLAGI': return 'cat_water'.tr();
+      case 'ELEKTRIK ARIZASI': return 'cat_electric_urgent'.tr();
+      case 'YOL COKMESI': return 'cat_road_collapse'.tr(); 
       case 'CUKUR': return 'cat_pothole'.tr();
       case 'COPLUK': return 'cat_garbage'.tr();
       case 'KIRIK_BANK': return 'cat_bench'.tr();
@@ -51,11 +55,27 @@ class _NotificationScreenState extends State<NotificationScreen> {
       case 'SCOOTER': return 'cat_scooter'.tr();
       case 'POSTER': return 'cat_poster'.tr();
       case 'AGAC': return 'cat_tree'.tr();
+      case 'DIGER': return 'cat_other'.tr(); 
       default: return category;
     }
   }
 
-  // --- BAŞLIKLARI ÇEVİREN FONKSİYON ---
+  String _getInstitutionName(String code) {
+    String cleanCode = code.trim().toUpperCase().replaceAll('INST_', '');
+    switch (cleanCode) {
+      case 'FEN_ISLERI': return 'inst_fen'.tr();
+      case 'TEDAS': return 'inst_tedas'.tr(); 
+      case 'ASKI': return 'inst_aski'.tr(); 
+      case 'ZABITA': return 'inst_zabita'.tr();
+      case 'TEMIZLIK': return 'inst_temizlik'.tr();
+      case 'EMNIYET': return 'inst_police_fire'.tr();
+      case 'UKOME': return 'inst_ukome'.tr();
+      case 'PARK_BAHCE': return 'inst_park_bahce'.tr();
+      case 'DIGER': return 'inst_other_manual'.tr();
+      default: return code; // yönetici manuel ne yazdıysa onu bozmadan gösterir
+    }
+  }
+
   String _getLocalizedTitle(String rawTitle) {
     String t = rawTitle.toUpperCase();
     if (t.contains('ACİL') || t.contains('URGENT') || t.contains('🚨')) {
@@ -76,17 +96,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return rawTitle; 
   }
 
-  // --- 🌟 YENİ: MESAJLARI (CÜMLELERİ) AKILLI ÇEVİREN FONKSİYON ---
+  //  MESAJLARI AKILLI ÇEVİREN FONKSİYON 
   String _getLocalizedMessage(String rawMessage) {
     String m = rawMessage;
 
-    // 1. Yeni Şikayet Kalıbı: "... konulu şikayetiniz sisteme kaydedildi..."
+    // Yeni Şikayet Kalıbı: "... konulu şikayetiniz sisteme kaydedildi..."
     if (m.contains('sisteme kaydedildi') && !m.contains('acil')) {
-      String cat = m.split(' konulu').first.trim(); // "CUKUR", "ELEKTRIK" vb. yakalar
+      String cat = m.split(' konulu').first.trim(); 
       return 'notif_msg_created'.tr(args: [_getCategoryTitle(cat)]);
     }
 
-    // 2. Durum Değişikliği Kalıbı: "... durumu Resolved olarak güncellenmiştir"
+    // Durum Değişikliği Kalıbı: "... durumu Resolved olarak güncellenmiştir"
     if (m.contains('durumu') && m.contains('güncellenmiştir')) {
       if (m.contains('RESOLVED') || m.contains('Çözüldü') || m.contains('COMPLETED')) {
         return 'notif_msg_status_resolved'.tr();
@@ -96,22 +116,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
       return 'notif_msg_status_updated'.tr();
     }
 
-    // 3. Kuruma İletildi Kalıbı: "Şikayetiniz ilgili kuruma (...) iletildi."
+    // Kuruma İletildi Kalıbı: "Şikayetiniz ilgili kuruma (...) iletildi."
     if (m.contains('ilgili kuruma') && m.contains('iletildi')) {
       String inst = "";
       if (m.contains('(') && m.contains(')')) {
-        inst = m.substring(m.indexOf('(') + 1, m.indexOf(')')); // "(TEDAŞ)" içindeki TEDAŞ'ı alır
+        inst = m.substring(m.indexOf('(') + 1, m.indexOf(')')); 
       }
-      return 'notif_msg_assigned'.tr(args: [inst]);
+      
+      // Ham kodu (PARK_BAHCE) kullanıcı dostu isme çevirerek mesaja ekleme
+      String translatedInst = _getInstitutionName(inst);
+      return 'notif_msg_assigned'.tr(args: [translatedInst]);
     }
 
-    // 4. Acil Durum Kalıbı: "... ihbarınız sistemimize acil koduyla kaydedildi..."
+    // Acil Durum Kalıbı: "... ihbarınız sistemimize acil koduyla kaydedildi..."
     if (m.contains('acil koduyla')) {
       String cat = m.split(' ihbarınız').first.trim();
       return 'notif_msg_urgent'.tr(args: [_getCategoryTitle(cat)]);
     }
 
-    // Hiçbir kalıba uymazsa son çare eski metot
     m = m.replaceAll("'RESOLVED'", 'status_resolved'.tr());
     m = m.replaceAll("RESOLVED", 'status_resolved'.tr());
     m = m.replaceAll("'IN_PROGRESS'", 'status_in_progress'.tr());
@@ -190,7 +212,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           )
                         ),
                         subtitle: Text(
-                          _getLocalizedMessage(message), // 🌟 AKILLI MESAJ ÇEVİRİSİ KULLANILIYOR
+                          _getLocalizedMessage(message), // AKILLI MESAJ ÇEVİRİSİ 
                           style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.black54, fontSize: 13)
                         ),
                         trailing: Icon(

@@ -113,7 +113,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
               padding: const EdgeInsets.all(12.0),
               decoration: BoxDecoration(
                 // Karanlık modda arka planı şeffaf yapıp temayı bozmamak için
-                color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.withOpacity(0.05), // DÜZELTİLDİ
+                color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.withOpacity(0.05), 
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.blue.withOpacity(0.3)),
               ),
@@ -130,7 +130,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                       border: const OutlineInputBorder(),
                       filled: true,
                       // Textfield içi karanlık/aydınlık mod ayarı
-                      fillColor: isDark ? Colors.grey.shade800 : Colors.white, // DÜZELTİLDİ
+                      fillColor: isDark ? Colors.grey.shade800 : Colors.white, 
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -163,7 +163,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 elevation: 2,
                 margin: const EdgeInsets.symmetric(vertical: 8.0),
                 // Kart arka planını temaya uyumlu hale getir
-                color: isDark ? Colors.grey.shade900 : Colors.white, // DÜZELTİLDİ
+                color: isDark ? Colors.grey.shade900 : Colors.white, 
                 child: ListTile(
                   title: Text(poll.title.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Column(
@@ -265,7 +265,7 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               // Bilgi kutusunun arka planını karanlık mod uyumlu yap
-              color: isDark ? Colors.green.withOpacity(0.2) : Colors.green.shade50, // DÜZELTİLDİ
+              color: isDark ? Colors.green.withOpacity(0.2) : Colors.green.shade50, 
               child: Row(
                 children: [
                   const Icon(Icons.info_outline, color: Colors.green),
@@ -286,7 +286,7 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
                     margin: const EdgeInsets.only(bottom: 20.0, top: 10.0),
                     elevation: 3,
                     // Kart arka planını temaya uyumlu hale getir
-                    color: isDark ? Colors.grey.shade900 : Colors.white, // DÜZELTİLDİ
+                    color: isDark ? Colors.grey.shade900 : Colors.white, 
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -308,7 +308,7 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
                               border: const OutlineInputBorder(),
                               filled: true,
                               // Textfield içi karanlık/aydınlık mod ayarı
-                              fillColor: isDark ? Colors.grey.shade800 : Colors.white, // DÜZELTİLDİ
+                              fillColor: isDark ? Colors.grey.shade800 : Colors.white, 
                             ),
                           ),
                         ],
@@ -322,7 +322,7 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
                   margin: const EdgeInsets.only(bottom: 20.0),
                   elevation: 3,
                   // Kart arka planını temaya uyumlu hale getir
-                  color: isDark ? Colors.grey.shade900 : Colors.white, // DÜZELTİLDİ
+                  color: isDark ? Colors.grey.shade900 : Colors.white, 
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -353,13 +353,11 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
             ),
           ),
           
-          // --- Burası: Submit Survey butonunun arkasındaki beyaz alanı düzeltiyoruz ---
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              // Sabit Colors.white yerine temanın kendi rengini veya uygun karanlık rengi veriyoruz
-              color: isDark ? Colors.grey.shade900 : Colors.white, // DÜZELTİLDİ
+              color: isDark ? Colors.grey.shade900 : Colors.white, 
               boxShadow: [
                 BoxShadow(
                   color: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.shade300, 

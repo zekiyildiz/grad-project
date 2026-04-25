@@ -41,7 +41,7 @@ class AuthProvider extends ChangeNotifier {
         // 2. Token varsa sunucudan kullanıcı bilgisini çekmeye çalış
         final userData = await _authService.getCurrentUser();
 
-        // KORUMA: Eğer sunucudan boş veri gelirse veya veri bozuksa HATA FIRLAT
+        // Eğer sunucudan boş veri gelirse veya veri bozuksa HATA FIRLAT
         // Bu sayede "Giriş yapılmış gibi" davranıp boş sayfa açmaz.
         if (userData == null ||
             (userData['user'] == null && userData['email'] == null)) {

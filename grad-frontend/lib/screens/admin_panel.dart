@@ -33,6 +33,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   int urgentTasks = 0;
   
   Map<String, int> _institutionStats = {};
+  // İlçe bazlı kriz verilerini tutacak harita
+  Map<String, int> _districtStats = {};
 
   String _statusFilter = 'TÜMÜ';
   String _instFilter = 'TÜMÜ'; 
@@ -45,9 +47,75 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     _fetchLiveDashboardData();
   }
 
+// Mahalle ilçe eşleşmesi
+  String _parseDistrict(String address) {
+    if (address.trim().isEmpty) return "BİLİNMEYEN";
+
+    String addrUpper = address.toUpperCase()
+        .replaceAll('İ', 'I').replaceAll('Ğ', 'G')
+        .replaceAll('Ç', 'C').replaceAll('Ş', 'S')
+        .replaceAll('Ö', 'O').replaceAll('Ü', 'U');
+
+    // Koordinat ve Manuel Kontrolü
+    bool isCoordinate = RegExp(r'\d{2}\.\d{3,}').hasMatch(addrUpper) || RegExp(r'^[0-9.,\s|-]+$').hasMatch(addrUpper);
+    if (isCoordinate || addrUpper.contains('MANUEL') || addrUpper.contains('MERKEZ')) {
+      return 'HARİTADAN SEÇİLEN';
+    }
+
+    // MAHALLE / CADDE -> İLÇE YÖNLENDİRMESİ
+    
+    // ÇANKAYA
+    if (addrUpper.contains('CANKAYA') || addrUpper.contains('NECATIBEY') || addrUpper.contains('AKAY') || 
+        addrUpper.contains('CIGDEM') || addrUpper.contains('DIKMEN') || addrUpper.contains('TUNALI') || 
+        addrUpper.contains('KIZILAY') || addrUpper.contains('HACETTEPE') || addrUpper.contains('BAHCELIEVLER') || 
+        addrUpper.contains('CEBECI') || addrUpper.contains('BALGAT') || addrUpper.contains('CUKURAMBAR')) {
+      return 'ÇANKAYA'; 
+    }
+    
+    // YENİMAHALLE
+    if (addrUpper.contains('YENIMAHALLE') || addrUpper.contains('BURC') || addrUpper.contains('CEM ERSEVER') || 
+        addrUpper.contains('BATIKENT') || addrUpper.contains('DEMETEVLER') || addrUpper.contains('OSTIM') || 
+        addrUpper.contains('SENTEPE')) {
+      return 'YENİMAHALLE';
+    }
+
+    // ALTINDAĞ
+    if (addrUpper.contains('ALTINDAG') || addrUpper.contains('ULUS') || addrUpper.contains('HACI BAYRAM') || 
+        addrUpper.contains('KALE') || addrUpper.contains('SITELER') || addrUpper.contains('KARAPURCEK')) {
+      return 'ALTINDAĞ';
+    }
+
+    // KEÇİÖREN
+    if (addrUpper.contains('KECIOREN') || addrUpper.contains('ETLIK') || addrUpper.contains('INCIRLI') || 
+        addrUpper.contains('ESERTEPE') || addrUpper.contains('AKTEPE') || addrUpper.contains('UFUKTEPE')) {
+      return 'KEÇİÖREN';
+    }
+
+    // Diğer Ana İlçeler
+    if (addrUpper.contains('ETIMESGUT') || addrUpper.contains('ERYAMAN') || addrUpper.contains('ELVANKENT')) return 'ETİMESGUT';
+    if (addrUpper.contains('MAMAK') || addrUpper.contains('ABIDINPASA') || addrUpper.contains('AKDERE')) return 'MAMAK';
+    if (addrUpper.contains('SINCAN') || addrUpper.contains('FATIH') || addrUpper.contains('YENIKENT')) return 'SİNCAN';
+    if (addrUpper.contains('GOLBASI') || addrUpper.contains('INCEK')) return 'GÖLBAŞI';
+    if (addrUpper.contains('PURSAKLAR')) return 'PURSAKLAR';
+
+    // Eğer listede yoksa Virgülden önceki mantıklı kısmı bulma
+    try {
+      List<String> parts = address.split(',');
+      if (parts.length >= 2) {
+        String potentialDistrict = parts[parts.length - 2].trim().toUpperCase();
+        if (potentialDistrict != 'ANKARA' && potentialDistrict != 'TURKIYE' && potentialDistrict.length > 2) {
+           return parts[parts.length - 2].trim(); 
+        }
+      }
+    } catch (e) {}
+
+    return 'DİĞER BÖLGELER';
+  }
+
   Future<void> _fetchLiveDashboardData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
+    
     try {
       final reports = await _reportService.getAllReports();
       
@@ -58,29 +126,48 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
         int urgent = 0;
         
         Map<String, int> instCounts = {
-          'FEN_ISLERI': 0, 'TEDAS': 0, 'ASKI': 0, 'ZABITA': 0, 'TEMIZLIK': 0, 'EMNIYET': 0, 'ATANMADI': 0
+          'FEN_ISLERI': 0, 'TEDAS': 0, 'ASKI': 0, 'ZABITA': 0, 'TEMIZLIK': 0, 'EMNIYET': 0, 'UKOME': 0, 'PARK_BAHCE': 0, 'DIGER': 0, 'ATANMADI': 0
         };
+        
+        Map<String, int> tempDistrictStats = {};
 
         for (var r in reports) {
-          String status = r['status']?.toString().toUpperCase() ?? '';
-          bool isUrgentFlag = r['isUrgent'] == true;
+          // Tip güvenliği için verileri String'e ve Boolean'a zorla
+          String status = (r['status'] ?? '').toString().toUpperCase().trim();
+          bool isUrgentFlag = (r['isUrgent'] == true || r['isUrgent'].toString().toLowerCase() == 'true');
           
           String inst = r['assignedInstitution']?.toString().toUpperCase().replaceAll('INST_', '') ?? '';
           if (inst.isEmpty) inst = 'ATANMADI';
+          
+          // Kurum istatistiklerini say (Tüm şikayetler üzerinden)
           if (instCounts.containsKey(inst)) {
             instCounts[inst] = instCounts[inst]! + 1;
+          } else {
+            instCounts['DIGER'] = instCounts['DIGER']! + 1;
           }
 
+          // Şikayet Durumuna Göre Sayım
           if (status == 'RESOLVED' || status == 'COMPLETED') {
             resolved++;
           } else {
-            active++; 
-          }
+            active++; // Aktif şikayetleri say
+            
+            // SADECE AKTİF ACİL DURUMLARI SAY (Yöneticinin önceliği)
+            if (isUrgentFlag) {
+              urgent++;
+            }
 
-          if (isUrgentFlag && status != 'RESOLVED') {
-            urgent++;
+            // BÖLGESEL ANALİZ (Sadece aktif krizler için)
+            String address = (r['location']?['address'] ?? r['address'] ?? '').toString();
+            String district = _parseDistrict(address);
+            tempDistrictStats[district] = (tempDistrictStats[district] ?? 0) + 1;
           }
         }
+
+        // Kriz bölgelerini en çoktan en aza sırala
+        var sortedDistricts = Map.fromEntries(
+            tempDistrictStats.entries.toList()..sort((e1, e2) => e2.value.compareTo(e1.value))
+        );
 
         setState(() {
           _allReports = reports;
@@ -89,10 +176,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
           resolvedTasks = resolved;
           urgentTasks = urgent;
           _institutionStats = instCounts; 
+          _districtStats = sortedDistricts;
           _isLoading = false;
         });
       }
     } catch (e) {
+      debugPrint("Veri çekme hatası: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -108,53 +197,67 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   }
 
   String _getCategoryTitle(String category) {
-    String key = category.trim().toUpperCase();
+    String key = category.trim().toUpperCase()
+        .replaceAll('İ', 'I').replaceAll('Ğ', 'G')
+        .replaceAll('Ç', 'C').replaceAll('Ş', 'S')
+        .replaceAll('Ö', 'O').replaceAll('Ü', 'U');
+
     switch (key) {
       case 'YANGIN': return 'cat_fire'.tr();
-      case 'GAZ KAÇAĞI': return 'cat_gas'.tr();
-      case 'SU PATLAĞI': return 'cat_water'.tr();
-      case 'ELEKTRİK ARIZASI': return 'cat_electric_urgent'.tr();
-      case 'YOL ÇÖKMESİ': return 'cat_road_collapse'.tr();
+      case 'GAZ KACAGI': return 'cat_gas'.tr();
+      case 'SU PATLAGI': return 'cat_water'.tr();
+      case 'ELEKTRIK ARIZASI': return 'cat_electric_urgent'.tr();
+      case 'YOL COKMESI': return 'cat_road_collapse'.tr();
       case 'CUKUR': return 'cat_pothole'.tr();
       case 'COPLUK': return 'cat_garbage'.tr();
       case 'KIRIK_BANK': return 'cat_bench'.tr();
       case 'TRAFIK': return 'cat_traffic'.tr();
       case 'ELEKTRIK': return 'cat_electric'.tr();
       case 'SCOOTER': return 'cat_scooter'.tr();
+      case 'POSTER': return 'cat_poster'.tr();
+      case 'AGAC': return 'cat_tree'.tr();
+      case 'DIGER': return 'cat_other'.tr(); 
       default: return category; 
     }
   }
 
   String _predictInstitution(String category) {
-    String cat = category.toUpperCase()
-        .replaceAll('İ', 'I').replaceAll('Ç', 'C').replaceAll('Ş', 'S')
-        .replaceAll('Ğ', 'G').replaceAll('Ü', 'U').replaceAll('Ö', 'O');
+    String cat = category.toUpperCase().replaceAll('İ', 'I').replaceAll('Ç', 'C').replaceAll('Ş', 'S').replaceAll('Ğ', 'G').replaceAll('Ü', 'U').replaceAll('Ö', 'O');
     
     if (cat.contains('YANGIN')) return 'EMNIYET';
     if (cat.contains('GAZ') || cat.contains('ELEKTRIK')) return 'TEDAS';
     if (cat.contains('SU')) return 'ASKI';
     if (cat.contains('COP') || cat.contains('TEMIZLIK')) return 'TEMIZLIK';
-    if (cat.contains('SCOOTER') || cat.contains('TRAFIK') || cat.contains('POSTER')) return 'ZABITA';
+    if (cat.contains('TRAFIK')) return 'UKOME';
+    if (cat.contains('AGAC') || cat.contains('BANK')) return 'PARK_BAHCE';
+    if (cat.contains('SCOOTER') || cat.contains('POSTER') || cat.contains('AFIS')) return 'ZABITA';
+    
     return 'FEN_ISLERI';
   }
 
-  // --- TAMAMEN DİLE DUYARLI KURUM İSİMLERİ ---
   String _getInstitutionName(String? code) {
-    if (code == null || code.isEmpty || code == 'ATANMADI') return 'inst_unassigned'.tr();
+    if (code == null || code.isEmpty || code == 'ATANMADI' || code == 'PENDING' || code == 'STATUS_PENDING') return 'inst_unassigned'.tr();
+    
     String cleanCode = code.toUpperCase().replaceAll('INST_', '');
+    
     switch (cleanCode) {
       case 'FEN_ISLERI': return 'inst_fen'.tr();
       case 'TEDAS': return 'inst_tedas'.tr(); 
       case 'ASKI': return 'inst_aski'.tr(); 
       case 'ZABITA': return 'inst_zabita'.tr();
       case 'TEMIZLIK': return 'inst_temizlik'.tr();
-      case 'EMNIYET': return 'inst_emniyet'.tr();
-      default: return code;
+      case 'EMNIYET': return 'inst_police_fire'.tr();
+      case 'UKOME': return 'inst_ukome'.tr(); 
+      case 'PARK_BAHCE': return 'inst_park_bahce'.tr(); 
+      case 'DIGER': return 'inst_other_manual'.tr(); 
+      default: return code; 
     }
   }
 
   void _showAssignmentDialog(BuildContext context, Map<String, dynamic> task) {
     String currentSelection = _predictInstitution(task['category'].toString());
+    final TextEditingController _customInstController = TextEditingController();
+    bool _isOtherSelected = false;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
@@ -165,28 +268,59 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text("admin_assign_title".tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-            content: DropdownButtonFormField<String>(
-              value: currentSelection,
-              dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              // items içindeki const'lar kaldırıldı, .tr() eklendi
-              items: [
-                DropdownMenuItem(value: 'FEN_ISLERI', child: Text('inst_fen'.tr())),
-                DropdownMenuItem(value: 'TEDAS', child: Text('inst_tedas'.tr())), 
-                DropdownMenuItem(value: 'ASKI', child: Text('inst_aski'.tr())),  
-                DropdownMenuItem(value: 'ZABITA', child: Text('inst_zabita'.tr())),
-                DropdownMenuItem(value: 'TEMIZLIK', child: Text('inst_temizlik'.tr())),
-                DropdownMenuItem(value: 'EMNIYET', child: Text('inst_emniyet'.tr())),
-              ],
-              onChanged: (val) => setDialogState(() => currentSelection = val!),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _isOtherSelected ? 'DIGER' : (['FEN_ISLERI', 'TEDAS', 'ASKI', 'ZABITA', 'TEMIZLIK', 'EMNIYET', 'UKOME', 'PARK_BAHCE'].contains(currentSelection) ? currentSelection : 'FEN_ISLERI'),
+                    dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    items: [
+                      DropdownMenuItem(value: 'FEN_ISLERI', child: Text('inst_fen'.tr())),
+                      DropdownMenuItem(value: 'TEDAS', child: Text('inst_tedas'.tr())), 
+                      DropdownMenuItem(value: 'ASKI', child: Text('inst_aski'.tr())),  
+                      DropdownMenuItem(value: 'ZABITA', child: Text('inst_zabita'.tr())),
+                      DropdownMenuItem(value: 'TEMIZLIK', child: Text('inst_temizlik'.tr())),
+                      DropdownMenuItem(value: 'EMNIYET', child: Text('inst_police_fire'.tr())),
+                      DropdownMenuItem(value: 'UKOME', child: Text('inst_ukome'.tr())),
+                      DropdownMenuItem(value: 'PARK_BAHCE', child: Text('inst_park_bahce'.tr())),
+                      DropdownMenuItem(value: 'DIGER', child: Text('inst_other_manual'.tr())), 
+                    ],
+                    onChanged: (val) {
+                      setDialogState(() {
+                        currentSelection = val!;
+                        _isOtherSelected = (val == 'DIGER');
+                      });
+                    },
+                  ),
+                  
+                  if (_isOtherSelected) ...[
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: _customInstController,
+                      decoration: InputDecoration(
+                        labelText: "inst_manual_label".tr(), 
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: Text('cancel'.tr())),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
                 onPressed: () async {
+                  String finalInstitution = _isOtherSelected 
+                      ? _customInstController.text.trim() 
+                      : currentSelection;
+
+                  if (_isOtherSelected && finalInstitution.isEmpty) return;
+
                   Navigator.pop(ctx);
-                  await _reportService.assignInstitution(task['id'], currentSelection);
+                  await _reportService.assignInstitution(task['id'], finalInstitution);
                   _fetchLiveDashboardData();
                 },
                 child: Text('btn_assign'.tr(), style: const TextStyle(color: Colors.white)),
@@ -237,21 +371,38 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     );
   }
 
-  // --- ADMİN İÇİN GÜNCELLENMİŞ DETAY EKRANI (SADECE OKUMA, BUTON YOK) ---
   void _showReportDetails(BuildContext context, Map<String, dynamic> item, bool isDark) {
     String rawStatus = item['status']?.toString().toUpperCase() ?? 'PENDING';
-    bool isCritical = item['isUrgent'] == true && rawStatus != 'RESOLVED';
+    String rawCat = item['category']?.toString().toUpperCase() ?? '';
+    
+    bool isUrgentEmergency = ['YANGIN', 'GAZ KAÇAĞI', 'SU PATLAĞI', 'ELEKTRİK ARIZASI', 'YOL ÇÖKMESİ'].contains(rawCat) || item['isUrgent'] == true;
+    bool isCritical = isUrgentEmergency && rawStatus != 'RESOLVED';
+    
     String assignedTo = item['assignedInstitution']?.toString() ?? '';
     
     String? imageUrl;
     if (item['imageUrls'] != null && item['imageUrls'] is List && item['imageUrls'].isNotEmpty) {
       imageUrl = item['imageUrls'][0].toString();
-    } else if (item['images'] != null && item['images'] is List && item['images'].isNotEmpty) {
-      imageUrl = item['images'][0].toString();
     } else if (item['imageUrl'] != null) {
       imageUrl = item['imageUrl'].toString();
-    } else if (item['image'] != null) {
-      imageUrl = item['image'].toString();
+    }
+
+    String statusBadgeText = "";
+    Color statusBadgeColor = Colors.orange;
+    IconData statusBadgeIcon = Icons.hourglass_empty;
+
+    if (rawStatus == 'RESOLVED' || rawStatus == 'COMPLETED') {
+      statusBadgeText = 'status_resolved'.tr();
+      statusBadgeColor = Colors.green;
+      statusBadgeIcon = Icons.check_circle;
+    } else if (rawStatus == 'IN_PROGRESS' || assignedTo.isNotEmpty) {
+      statusBadgeText = "status_sevk".tr();
+      statusBadgeColor = Colors.orange; 
+      statusBadgeIcon = Icons.engineering;
+    } else {
+      statusBadgeText = isUrgentEmergency ? "status_urgent_pending".tr() : "status_pending".tr();
+      statusBadgeColor = isUrgentEmergency ? Colors.red : Colors.orange;
+      statusBadgeIcon = isUrgentEmergency ? Icons.warning : Icons.hourglass_empty;
     }
 
     showModalBottomSheet(
@@ -285,7 +436,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _getCategoryTitle(item['category']?.toString() ?? 'DİĞER'), 
+                          item['titleStr'] ?? _getCategoryTitle(rawCat), 
                           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isCritical ? Colors.red : (isDark ? Colors.white : Colors.black87))
                         ),
                         Text(_getTimeAgo(item['createdAt']), style: const TextStyle(color: Colors.grey, fontSize: 13)),
@@ -318,21 +469,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
               ),
               const SizedBox(height: 20),
 
-              // 🌟 GÜNCELLENEN FOTOĞRAF ALANI (ADMİN PANELİ)
-              if (imageUrl != null && imageUrl.isNotEmpty && imageUrl != 'null' || !isCritical) ...[
+              if (!isUrgentEmergency) ...[
                 Text("Eklenen Fotoğraf", style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
                 if (imageUrl != null && imageUrl.isNotEmpty && imageUrl != 'null')
-                  GestureDetector(
-                    onTap: () {
-                      // Resim büyütme diyaloğu kodu
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.network(
-                        imageUrl, width: double.infinity, height: 200, fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(height: 150, color: Colors.grey.shade300, child: const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey))),
-                      ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: Image.network(
+                      imageUrl, width: double.infinity, height: 200, fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(height: 150, color: Colors.grey.shade300, child: const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey))),
                     ),
                   )
                 else
@@ -361,45 +506,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 const SizedBox(height: 30),
               ],
 
-              if (rawStatus == 'PENDING')
-                Container(
-                  width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.orange)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.hourglass_empty, color: Colors.orange, size: 24),
-                      const SizedBox(width: 8),
-                      Text('status_pending'.tr(), style: const TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                )
-              else if (rawStatus == 'IN_PROGRESS')
-                Container(
-                  width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.blue)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.engineering, color: Colors.blue, size: 24),
-                      const SizedBox(width: 8),
-                      Text('filter_in_progress'.tr(), style: const TextStyle(color: Colors.blue, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                )
-              else 
-                Container(
-                  width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.green)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.check_circle, color: Colors.green, size: 24),
-                      const SizedBox(width: 8),
-                      Text('status_resolved'.tr(), style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
+              Container(
+                width: double.infinity, 
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                decoration: BoxDecoration(
+                  color: statusBadgeColor.withOpacity(0.1), 
+                  borderRadius: BorderRadius.circular(15), 
+                  border: Border.all(color: statusBadgeColor, width: 2)
                 ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(statusBadgeIcon, color: statusBadgeColor, size: 24),
+                    const SizedBox(width: 10),
+                    Text(
+                      statusBadgeText, 
+                      style: TextStyle(color: statusBadgeColor, fontSize: 18, fontWeight: FontWeight.bold)
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 40),
             ],
           ),
@@ -436,23 +562,58 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
+            // TAŞMA KORUMALI HEADER: DrawerHeader yerine esnek Container kullandık
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 50, 16, 20), // Üstten güvenli boşluk (StatusBar için)
               decoration: const BoxDecoration(color: primaryAdminColor),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min, // İçerik kadar yer kapla
                 children: [
-                  const CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.admin_panel_settings, size: 35, color: Color(0xFF0D47A1))),
-                  const SizedBox(height: 10),
-                  Text('admin_drawer_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  Text('admin_drawer_subtitle'.tr(), style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+                  const CircleAvatar(
+                    radius: 30, 
+                    backgroundColor: Colors.white, 
+                    child: Icon(Icons.admin_panel_settings, size: 35, color: Color(0xFF0D47A1))
+                  ),
+                  const SizedBox(height: 15),
+                  // Metin çok büyürse sığması için FittedBox ile sarmaladık
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'admin_drawer_title'.tr(), 
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'admin_drawer_subtitle'.tr(), 
+                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)
+                    ),
+                  ),
                 ],
               ),
             ),
-            ListTile(leading: const Icon(Icons.person, color: Colors.blue), title: Text('prof_title'.tr()), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())); }),
-            ListTile(leading: const Icon(Icons.settings, color: Colors.blueGrey), title: Text('settings_title'.tr()), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())); }),
+            ListTile(
+              leading: const Icon(Icons.person, color: Colors.blue), 
+              title: Text('prof_title'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), 
+              onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())); }
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings, color: Colors.blueGrey), 
+              title: Text('settings_title'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), 
+              onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())); }
+            ),
             const Divider(),
-            ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: Text('logout'.tr()), onTap: () { Navigator.pop(context); _showLogoutConfirmDialog(context); }),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red), 
+              title: Text('logout'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)), 
+              onTap: () { Navigator.pop(context); _showLogoutConfirmDialog(context); }
+            ),
           ],
         ),
       ),
@@ -474,9 +635,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     );
   }
 
-  // ==========================================
-  // --- İSTATİSTİKLER VE GRAFİK BÖLÜMÜ ---
-  // ==========================================
+  void _jumpToFilteredFeed({String? status, bool? onlyUrgent}) {
+    setState(() {
+      if (status != null) _statusFilter = status;
+      if (onlyUrgent != null) _onlyUrgent = onlyUrgent;
+      _tabController.animateTo(1); // CANLI ACİL AKIŞ sekmesine geçiş
+    });
+  }
+
   Widget _buildStatisticsTab(bool isDark) {
     return RefreshIndicator(
       onRefresh: _fetchLiveDashboardData,
@@ -486,57 +652,85 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStatGrid(isDark),
+            _buildStatGrid(isDark), 
             const SizedBox(height: 25),
             
-            // --- TAMAMEN DİLE DUYARLI GRAFİK BAŞLIĞI ---
-            Text("admin_stats_inst_workload".tr(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+            Row(
+              children: [
+                Icon(Icons.local_fire_department, color: Colors.red.shade700, size: 24),
+                const SizedBox(width: 8),
+                Text("admin_regional_crisis_map".tr(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+              ],
+            ),
             const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: isDark ? Colors.grey.shade800 : Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]),
-              child: _institutionStats.isEmpty
-                  ? Center(child: Text("admin_no_data".tr()))
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey.shade900 : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.red.withOpacity(0.2), width: 1.5),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+              ),
+              child: _districtStats.isEmpty
+                  ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Text("admin_no_data".tr())))
                   : Column(
-                      children: _institutionStats.entries.map((entry) {
-                        if (entry.value == 0 && entry.key != 'ATANMADI') return const SizedBox.shrink();
-                        
-                        double percentage = totalReports == 0 ? 0 : entry.value / totalReports;
-                        Color barColor = entry.key == 'ATANMADI' ? Colors.grey : Colors.blue;
+                      children: _districtStats.entries.map((entry) {
+                        double citySharePercentage = (activeTasks <= 0) ? 0.0 : (entry.value / activeTasks);
+                        Color heatColor = citySharePercentage > 0.4 ? Colors.red.shade700 : (citySharePercentage > 0.15 ? Colors.orange.shade700 : Colors.amber.shade600);
                         
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6.0),
+                          padding: const EdgeInsets.symmetric(vertical: 10.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  // --- ÇÖZÜM 1: UZUN İSİMLER İÇİN EXPANDED VE ELLIPSIS EKLENDİ ---
+                                  // İlçe ismi için Expanded kullanarak kalan boşluğu ona veriyoruz
                                   Expanded(
-                                    child: Text(
-                                      _getInstitutionName(entry.key), 
-                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade300 : Colors.black87),
-                                      maxLines: 1, // Tek satıra zorla
-                                      overflow: TextOverflow.ellipsis, // Sığmazsa "..." koy
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.location_city, size: 16, color: heatColor),
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Text(
+                                            entry.key, 
+                                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                                            overflow: TextOverflow.ellipsis, // Çok uzunsa sonuna üç nokta koyar
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 8), // Araya boşluk eklendi
-                                  Text(
-                                    "${entry.value} ${'admin_stats_complaint_count'.tr()} (%${(percentage * 100).toStringAsFixed(1)})", 
-                                    style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)
+                                  const SizedBox(width: 8),
+                                  // Badge kısmını FittedBox içine alarak sığmama durumunda yazı boyutunu otomatik küçültmesini sağlıyoruz
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(color: heatColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                      child: Text(
+                                        "admin_crisis_with_percent".tr(args: [
+                                          entry.value.toString(), 
+                                          (citySharePercentage * 100).toStringAsFixed(1)
+                                        ]), 
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: heatColor)
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 5),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: percentage,
-                                  minHeight: 8,
-                                  backgroundColor: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
-                                  color: barColor,
-                                ),
+                              const SizedBox(height: 8),
+                              Stack(
+                                children: [
+                                  Container(height: 10, decoration: BoxDecoration(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200, borderRadius: BorderRadius.circular(5))),
+                                  FractionallySizedBox(
+                                    widthFactor: citySharePercentage.clamp(0.02, 1.0), 
+                                    child: Container(
+                                      height: 10, 
+                                      decoration: BoxDecoration(color: heatColor, borderRadius: BorderRadius.circular(5))
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -546,18 +740,57 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             ),
             
             const SizedBox(height: 25),
-            Text("admin_stats_personnel".tr(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+
+            Text("admin_stats_inst_workload".tr(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: isDark ? Colors.grey.shade800 : Colors.white, borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                children: [
-                  Text("${"admin_stats_active_total".tr()}: 45", style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-                  const SizedBox(height: 10),
-                  LinearProgressIndicator(value: activeTasks == 0 ? 0.1 : (activeTasks / (activeTasks + 10)).clamp(0.1, 1.0), color: Colors.blue, minHeight: 8),
-                ],
-              ),
+              decoration: BoxDecoration(color: isDark ? Colors.grey.shade900 : Colors.white, borderRadius: BorderRadius.circular(12)),
+              child: _institutionStats.isEmpty
+                  ? Center(child: Text("admin_no_data".tr()))
+                  : Column(
+                      children: _institutionStats.entries.map((entry) {
+                        if (entry.value == 0 && entry.key != 'ATANMADI') return const SizedBox.shrink();
+                        double percentage = totalReports == 0 ? 0 : (entry.value / totalReports).clamp(0.0, 1.0);
+                        
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _getInstitutionName(entry.key), 
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade300 : Colors.black87), 
+                                      maxLines: 1, 
+                                      overflow: TextOverflow.ellipsis
+                                    )
+                                  ),
+                                  const SizedBox(width: 8),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      "admin_task_with_percent".tr(args: [
+                                        entry.value.toString(), 
+                                        (percentage * 100).toStringAsFixed(1)
+                                      ]), 
+                                      style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(value: percentage, minHeight: 8, backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200, color: const Color(0xFF0D47A1)),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
             ),
           ],
         ),
@@ -568,7 +801,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   Widget _buildEmergencyFeedTab(bool isDark) {
     List<dynamic> filteredReports = _allReports.where((item) {
       String status = item['status']?.toString().toUpperCase() ?? 'PENDING';
-      String assignedInst = item['assignedInstitution']?.toString().toUpperCase().replaceAll('INST_', '') ?? '';
+      String assignedInstRaw = item['assignedInstitution']?.toString() ?? '';
+      String assignedInst = assignedInstRaw.toUpperCase().replaceAll('INST_', '');
+      
       if (assignedInst.isEmpty) assignedInst = 'ATANMADI';
       bool isUrgent = item['isUrgent'] == true;
 
@@ -576,24 +811,27 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
       if (_statusFilter == 'YENİ' && status != 'PENDING') return false;
       if (_statusFilter == 'İŞLEMDE' && status != 'IN_PROGRESS') return false;
       if (_statusFilter == 'ÇÖZÜLENLER' && status != 'RESOLVED' && status != 'COMPLETED') return false;
-      if (_instFilter != 'TÜMÜ' && assignedInst != _instFilter) return false;
+      
+      if (_instFilter != 'TÜMÜ') {
+        List<String> stdInst = ['FEN_ISLERI', 'TEDAS', 'ASKI', 'ZABITA', 'TEMIZLIK', 'EMNIYET', 'UKOME', 'PARK_BAHCE', 'ATANMADI'];
+        if (_instFilter == 'DIGER') {
+          if (stdInst.contains(assignedInst)) return false; 
+        } else {
+          if (assignedInst != _instFilter) return false; 
+        }
+      }
 
       return true;
     }).toList();
 
     filteredReports.sort((a, b) {
-      bool isUrgentA = a['isUrgent'] == true && a['status'] != 'RESOLVED';
-      bool isUrgentB = b['isUrgent'] == true && b['status'] != 'RESOLVED';
-      if (isUrgentA && !isUrgentB) return -1;
-      if (!isUrgentA && isUrgentB) return 1;
-      DateTime dateA = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
-      DateTime dateB = DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
+      DateTime dateA = DateTime.tryParse(a['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      DateTime dateB = DateTime.tryParse(b['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
       return dateB.compareTo(dateA);
     });
 
     return Column(
       children: [
-        // --- TAMAMEN DİLE DUYARLI İKİLİ FİLTRE PANELİ ---
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           color: isDark ? Colors.grey.shade800 : Colors.white,
@@ -630,6 +868,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                         DropdownMenuItem(value: 'ASKI', child: Text('inst_aski'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                         DropdownMenuItem(value: 'ZABITA', child: Text('inst_zabita'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                         DropdownMenuItem(value: 'TEMIZLIK', child: Text('inst_temizlik'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
+                        DropdownMenuItem(value: 'EMNIYET', child: Text('inst_police_fire'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
+                        DropdownMenuItem(value: 'UKOME', child: Text('inst_ukome'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))), 
+                        DropdownMenuItem(value: 'PARK_BAHCE', child: Text('inst_park_bahce'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))), 
+                        DropdownMenuItem(value: 'DIGER', child: Text('inst_other_manual'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                         DropdownMenuItem(value: 'ATANMADI', child: Text('inst_unassigned'.tr(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                       ],
                       onChanged: (val) => setState(() => _instFilter = val!),
@@ -650,7 +892,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
           ),
         ),
 
-        // LİSTE KISMI
         Expanded(
           child: filteredReports.isEmpty
               ? Center(child: Text("admin_no_match".tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)))
@@ -672,7 +913,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                       
                       String assignedTo = item['assignedInstitution']?.toString() ?? '';
 
-                      // Vatandaş Sayfası Detay Mantığı
                       String rawCat = item['category']?.toString().toUpperCase() ?? '';
                       bool isSystemCritical = ['YANGIN', 'GAZ KAÇAĞI', 'SU PATLAĞI', 'ELEKTRİK ARIZASI', 'YOL ÇÖKMESİ'].contains(rawCat);
                       bool isUserUrgent = item['isUrgent'] == true;
@@ -765,7 +1005,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                                         ],
                                       ),
                                     ),
-                                    // 🌟 ADMİN İÇİN BUTON YOK, SADECE İKON VAR
                                     if (rawStatus == 'RESOLVED' || rawStatus == 'COMPLETED')
                                       const Icon(Icons.check_circle, color: Colors.green, size: 32)
                                     else
@@ -804,44 +1043,63 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     );
   }
 
+
   Widget _buildStatGrid(bool isDark) {
     return GridView.count(
       crossAxisCount: 2,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.4,
       children: [
-        _buildStatCard("admin_stat_all".tr(), totalReports.toString(), Icons.public, Colors.blue, isDark),
-        _buildStatCard("admin_stat_active".tr(), activeTasks.toString(), Icons.engineering, Colors.orange, isDark),
-        _buildStatCard("admin_stat_solved".tr(), resolvedTasks.toString(), Icons.check_circle, Colors.green, isDark),
-        _buildStatCard("admin_stat_emergency".tr(), urgentTasks.toString(), Icons.warning, Colors.red, isDark),
+        _buildStatCard("admin_stat_all".tr(), totalReports.toString(), Icons.public, Colors.blue, isDark, 
+          onTap: () => _jumpToFilteredFeed(status: 'TÜMÜ', onlyUrgent: false)),
+        
+        _buildStatCard("admin_stat_active".tr(), activeTasks.toString(), Icons.engineering, Colors.orange, isDark, 
+          onTap: () => _jumpToFilteredFeed(status: 'İŞLEMDE', onlyUrgent: false)),
+        
+        _buildStatCard("admin_stat_solved".tr(), resolvedTasks.toString(), Icons.check_circle, Colors.green, isDark, 
+          onTap: () => _jumpToFilteredFeed(status: 'ÇÖZÜLENLER', onlyUrgent: false)),
+        
+        _buildStatCard("admin_stat_emergency".tr(), urgentTasks.toString(), Icons.warning, Colors.red, isDark, 
+          onTap: () => _jumpToFilteredFeed(onlyUrgent: true)),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String count, IconData icon, Color color, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade800 : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: color, size: 30),
-              Text(count, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-            ],
-          ),
-          Text(title, style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey, fontWeight: FontWeight.w600)),
-        ],
+  Widget _buildStatCard(String title, String count, IconData icon, Color color, bool isDark, {required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap, // TIKLANABİLİRLİK EKLENDİ
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey.shade800 : Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 24)),
+                Text(count, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text(title, style: TextStyle(fontSize: 13, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700, fontWeight: FontWeight.bold))),
+                Icon(Icons.arrow_forward_ios, size: 12, color: color.withOpacity(0.5)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

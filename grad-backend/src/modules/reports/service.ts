@@ -3,16 +3,46 @@ import { getFirestore } from '../../config/firebase';
 const COLLECTION = 'reports';
 
 const getAiSuggestion = (category: string) => {
-    switch (category?.toUpperCase()) {
-        case 'CUKUR': return 'FEN_ISLERI';
-        case 'ELEKTRIK': return 'TEDAS';
-        case 'TRAFIK': return 'UKOME';
-        case 'COPLUK': return 'TEMIZLIK';
-        case 'SCOOTER': return 'ZABITA';
+    // Olası Türkçe karakter sorunlarını ve boşlukları temizle
+    const cat = category?.toUpperCase()
+        .replace(/İ/g, 'I').replace(/Ç/g, 'C').replace(/Ş/g, 'S')
+        .replace(/Ğ/g, 'G').replace(/Ü/g, 'U').replace(/Ö/g, 'O').trim();
+    
+    // 2. Kategoriye Göre Kurum Yönlendirmeleri
+    switch (cat) {
+        case 'YANGIN': 
+            return 'EMNIYET';
+            
+        case 'GAZ KACAGI':
+        case 'ELEKTRIK ARIZASI':
+        case 'ELEKTRIK': 
+            return 'TEDAS';
+            
+        case 'SU PATLAGI': 
+            return 'ASKI';
+            
+        case 'COPLUK': 
+            return 'TEMIZLIK';
+            
+        case 'SCOOTER':
+        case 'POSTER': 
+            return 'ZABITA';
+            
+        // Trafik şikayetleri doğrudan UKOME'ye
+        case 'TRAFIK': 
+            return 'UKOME';
+            
+        // Bank ve Ağaç şikayetleri doğrudan Park ve Bahçeler'e
         case 'KIRIK_BANK':
-        case 'AGAC': return 'PARK_BAHCE';
-        case 'POSTER': return 'ZABITA';
-        default: return 'DIGER';
+        case 'AGAC': 
+            return 'PARK_BAHCE';
+            
+        case 'YOL COKMESI':
+        case 'CUKUR': 
+            return 'FEN_ISLERI';
+            
+        default: 
+            return 'DIGER'; 
     }
 };
 
@@ -27,8 +57,7 @@ export class ReportService {
         const categoryUpper = (data.category || '').toUpperCase();
         const urgentKeywords = ['YANGIN', 'GAZ', 'SU PATLAĞI', 'ELEKTRİK', 'YOL ÇÖKMESİ'];
         
-        // 🌟 KRİTİK DÜZELTME BURADA: Eğer vatandaş "Acil" ekranından gönderdiyse (isUrgent true ise), 
-        // kelimeye bakmaksızın acil kabul et!
+        // Eğer vatandaş "Acil" ekranından gönderdiyse (isUrgent true ise) kelimeye bakmaksızın acil kabul et!
         const isUrgent = data.isUrgent === true || data.isUrgent === 'true' || urgentKeywords.some(keyword => categoryUpper.includes(keyword));
 
         const reportData = {

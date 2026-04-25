@@ -16,6 +16,34 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  // Backend'den gelen iç içe JSON paketlerini güvenle açan fonksiyon
+  Map<String, dynamic> _extractUserData(dynamic response) {
+    if (response is! Map<String, dynamic>) return {};
+
+    // 1. Durum: Backend { "success": true, "data": { "user": {...}, "statistics": {...} } } dönüyorsa
+    if (response.containsKey('data')) {
+      final data = response['data'];
+      
+      // GetProfile isteği durumu
+      if (data is Map<String, dynamic> && data.containsKey('user')) {
+        return data['user'] as Map<String, dynamic>;
+      }
+      
+      // UpdateProfile isteği durumu (direkt user döner)
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+    }
+
+    // 2. Durum: Eğer ApiClient data'yı zaten dışarı çıkartıp gönderdiyse
+    if (response.containsKey('user')) {
+      return response['user'] as Map<String, dynamic>;
+    }
+
+    // Hiçbiri değilse response'un kendisini kullan
+    return response;
+  }
+
   /// Fetch user profile from API
   Future<void> fetchProfile() async {
     _isLoading = true;
@@ -24,7 +52,11 @@ class UserProvider extends ChangeNotifier {
 
     try {
       final response = await _userService.getProfile();
-      _profile = UserModel.fromJson(response['user'] ?? response);
+      
+      // Paketi güvenle aç ve kullanıcının gerçek verilerini al
+      final userData = _extractUserData(response); 
+      
+      _profile = UserModel.fromJson(userData);
       _isLoading = false;
       notifyListeners();
     } on ApiException catch (e) {
@@ -55,7 +87,10 @@ class UserProvider extends ChangeNotifier {
         address: address,
       );
       
-      _profile = UserModel.fromJson(response['user'] ?? response);
+      // Güncellenmiş paketi güvenle aç
+      final userData = _extractUserData(response);
+      
+      _profile = UserModel.fromJson(userData);
       _isLoading = false;
       notifyListeners();
       return true;

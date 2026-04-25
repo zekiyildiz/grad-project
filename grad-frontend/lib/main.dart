@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:easy_localization/easy_localization.dart'; // EKLENDİ
+import 'package:easy_localization/easy_localization.dart'; 
 
 // Providerlar
-// (Paket isimlerin farklıysa kendi proje ismine göre düzelt, örn: import '../providers/...')
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
@@ -11,8 +10,8 @@ import 'providers/user_provider.dart';
 // Ekranlar
 import 'screens/login_screen.dart';
 import 'screens/homepage_screen.dart';
-import 'screens/admin_panel.dart'; // EKLENDİ: Admin paneli
-import 'screens/employee_tasks_screen.dart'; // EKLENDİ: Çalışan paneli
+import 'screens/admin_panel.dart'; 
+import 'screens/employee_tasks_screen.dart'; 
 
 void main() async {
   // EKLENDİ: Dil paketinin başlaması için Flutter motorunu beklet

@@ -23,7 +23,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     super.dispose();
   }
 
-  // ÇÖZÜM BURADA: backendValue veritabanına gider, uiKey ise ekranda çevrilerek gösterilir.
+  // backendValue veritabanına gider, uiKey ise ekranda çevrilerek gösterilir
   final List<Map<String, dynamic>> _emergencyTypes = [
     {'backendValue': 'YANGIN', 'uiKey': 'cat_fire', 'icon': Icons.local_fire_department, 'color': Colors.red},
     {'backendValue': 'GAZ KAÇAĞI', 'uiKey': 'cat_gas', 'icon': Icons.gas_meter, 'color': Colors.orange},
@@ -51,14 +51,14 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
 
       Position? position;
       try {
-        // 🌟 1. AŞAMA: 5 saniye içinde gerçek konumu bulmaya çalış
+        // 5 saniye içinde gerçek konumu bulmaya çalış
         position = await Geolocator.getLastKnownPosition();
         position ??= await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.low,
           timeLimit: const Duration(seconds: 5), // 5 Saniye sınırımız
         );
       } catch (e) {
-        // 🌟 2. AŞAMA (HİLE/FALLBACK): Eğer 5 saniyede bulamazsa HATA VERME!
+        // Eğer 5 saniyede bulamazsa HATA VERME!
         // Emülatör tıkandığı için ona zorla Ankara koordinatlarını ver ve işleme devam et.
         debugPrint("Gerçek konum bulunamadı, Emülatör/Yedek koordinat kullanılıyor...");
         position = Position(
@@ -99,7 +99,7 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
       if (!mounted) return;
       setState(() => _isLoading = false);
       
-      // Başarı ekranını göster!
+      // Başarı ekranını göster
       _showSuccessDialog(uiKey.tr(), addressToSave);
 
     } catch (e) {
@@ -182,7 +182,7 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
                       maxLines: 2,
                       decoration: InputDecoration(
                         hintText: 'emerg_dialog_desc_hint'.tr(),
-                        errorText: (isOtherOption && isDescEmpty) ? "Lütfen durumu açıklayın" : null, 
+                        errorText: (isOtherOption && isDescEmpty) ? 'emerg_dialog_error_empty'.tr() : null,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         filled: true,
                         fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
@@ -214,9 +214,25 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
                     style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.red.shade200)),
                     icon: const Icon(Icons.map, color: Colors.red),
                     label: Text('emerg_btn_manual_loc'.tr(), style: const TextStyle(color: Colors.red)),
-                    onPressed: (isOtherOption && isDescEmpty) ? null : () { 
-                      Navigator.pop(ctx);
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ManualAddressScreen(emergencyType: backendValue)));
+                    onPressed: (isOtherOption && isDescEmpty) ? null : () async { 
+                      Navigator.pop(ctx); // Önce küçük diyaloğu kapat
+                      
+                      final result = await Navigator.push(
+                        context, 
+                        MaterialPageRoute(
+                          builder: (context) => ManualAddressScreen(
+                            emergencyType: backendValue,
+                            description: _descriptionController.text.isNotEmpty ? _descriptionController.text : 'emerg_default_desc'.tr(),
+                          )
+                        )
+                      );
+
+                      if (result != null && result is String) {
+                        _showSuccessDialog(uiKey.tr(), result);
+                      } 
+                      else if (result == true) { 
+                        _showSuccessDialog(uiKey.tr(), "Haritadan manuel olarak seçildi."); 
+                      }
                     },
                   ),
                 ],
@@ -302,6 +318,7 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
       onTap: () => _showLocationDialog(backendValue, uiKey),
       borderRadius: BorderRadius.circular(15),
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12), 
         decoration: BoxDecoration(
           color: isDark ? Colors.grey.shade900 : Colors.white,
           borderRadius: BorderRadius.circular(15),
@@ -314,18 +331,29 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
-              radius: 30,
+              radius: 26, 
               backgroundColor: color.withOpacity(0.1),
-              child: Icon(icon, size: 35, color: color),
+              child: Icon(icon, size: 30, color: color),
             ),
-            const SizedBox(height: 15),
-            Text(uiKey.tr(),
-                style: TextStyle(
-                  fontSize: 16, 
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
+            const SizedBox(height: 10), 
+            
+            Expanded(
+              child: Container(
+                alignment: Alignment.center, // Metni dikey ve yatayda ortalar
+                child: Text(
+                  uiKey.tr(),
+                  textAlign: TextAlign.center, 
+                  maxLines: 3, // Uzun metinlerin 3 satıra kadar inmesine izin verdik
+                  overflow: TextOverflow.ellipsis, // Eğer 3 satırı da geçerse sonuna "..." koyar
+                  style: TextStyle(
+                    fontSize: 14, // Boyutu sabitledik (küçülmeyecek)
+                    fontWeight: FontWeight.bold,
+                    height: 1.2, // Alt satıra geçtiğinde satırlar arası boşluk
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
-                textAlign: TextAlign.center),
+              ),
+            ),
           ],
         ),
       ),

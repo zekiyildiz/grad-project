@@ -11,7 +11,7 @@ import '../providers/theme_provider.dart';
 import 'confirmation_screen.dart';
 import 'location_picker_screen.dart';
 import 'package:latlong2/latlong.dart';
-import 'login_screen.dart'; // Bunu en üstteki import'ların arasına ekle
+import 'login_screen.dart'; 
 
 class ComplaintScreen extends StatefulWidget {
   const ComplaintScreen({Key? key}) : super(key: key);
@@ -84,7 +84,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
         return;
       }
 
-      // 🌟 ZIRH 1: Önce son bilinen konumu al (Emülatörler için hayat kurtarır)
+      // Önce son bilinen konumu al
       Position? position = await Geolocator.getLastKnownPosition();
       
       // Eğer son konum yoksa, düşük doğrulukla (hızlıca) yeni konum iste ve 5 saniye sınır koy
@@ -99,7 +99,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
       });
 
       try {
-        // 🌟 ZIRH 2: Adres dönüştürme (Geocoding) işlemine de 5 saniye sınır (Timeout) ekledik
+        // Adres dönüştürme (Geocoding) işlemine de 5 saniye sınır (Timeout) ekledik
         List<Placemark> placemarks = await placemarkFromCoordinates(
           position.latitude,
           position.longitude,
@@ -212,8 +212,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
     if (label.contains('garbage')) return 'COPLUK';
     if (label.contains('bench')) return 'KIRIK_BANK';
     if (label.contains('traffic')) return 'TRAFIK';
-    if (label.contains('panel') || label.contains('electric'))
-      return 'ELEKTRIK';
+    if (label.contains('panel') || label.contains('electric')) return 'ELEKTRIK';
     if (label.contains('scooter')) return 'SCOOTER';
     if (label.contains('poster') || label.contains('graffiti')) return 'POSTER';
     if (label.contains('tree')) return 'AGAC';
@@ -245,8 +244,8 @@ Future<void> _submitReport() async {
     setState(() => _isSending = true);
 
     try {
-      // --- 1. DEĞİŞİKLİK: FOTOĞRAFI ÖNCE SUNUCUYA YÜKLÜYORUZ ---
-      // --- 1. RESMİ YÜKLE ---
+      // FOTOĞRAFI ÖNCE SUNUCUYA YÜKLÜYORUZ 
+      // 1. RESMİ YÜKLE 
       List<String> finalImages = [];
       try {
         String? uploadedUrl = await _reportService.uploadImage(_selectedImage!);
@@ -257,14 +256,14 @@ Future<void> _submitReport() async {
         debugPrint("Fotoğraf yükleme hatası: $e");
       }
 
-      // --- 2. ŞİKAYETİ KAYDET ---
+      // 2. ŞİKAYETİ KAYDET
       await _reportService.createReport(
         category: _selectedCategory!,
         description: _descriptionController.text.isEmpty ? 'complaint_no_desc'.tr() : _descriptionController.text,
         latitude: _currentPosition!.latitude,
         longitude: _currentPosition!.longitude,
         address: _currentAddress,
-        isUrgent: false, // 🌟 Vatandaş artık elle seçemez, sistem karar verecek
+        isUrgent: false, 
         imageUrls: finalImages,
       );
 
@@ -353,7 +352,7 @@ Future<void> _submitReport() async {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${'toast_ai_found'.tr()} $detectedLabel (%${(confidence * 100).toInt()})',
+              '${'toast_ai_found'.tr()} $detectedLabel', 
             ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),

@@ -20,7 +20,7 @@ router.get('/:id', authMiddleware, controller.getReportById);
 router.put('/:id/assign', authMiddleware, controller.assignReport);
 router.put('/:id/status', authMiddleware, controller.updateReportStatus);
 
-// 🌟 YENİ EKLENEN: KATEGORİ GÜNCELLEME ROTASI
+// KATEGORİ GÜNCELLEME ROTASI
 router.put('/:id/category', authMiddleware, controller.updateReportCategory);
 
 export default router;

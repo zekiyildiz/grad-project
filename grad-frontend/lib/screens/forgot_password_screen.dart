@@ -129,7 +129,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         borderRadius: BorderRadius.circular(16),
       ),
       // Kart arka planını temaya uyumlu hale getir
-      color: isDark ? Colors.grey.shade900 : Colors.white, // DÜZELTİLDİ
+      color: isDark ? Colors.grey.shade900 : Colors.white, 
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -153,7 +153,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF343A40), // DÜZELTİLDİ
+                color: isDark ? Colors.white : const Color(0xFF343A40), 
               ),
             ),
             const SizedBox(height: 16),
@@ -162,7 +162,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: isDark ? Colors.grey.shade300 : Colors.grey[600], // DÜZELTİLDİ
+                color: isDark ? Colors.grey.shade300 : Colors.grey[600], 
               ),
             ),
             const SizedBox(height: 8),
@@ -171,7 +171,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: isDark ? Colors.grey.shade500 : Colors.grey[500], // DÜZELTİLDİ
+                color: isDark ? Colors.grey.shade500 : Colors.grey[500], 
               ),
             ),
             const SizedBox(height: 32),
@@ -270,7 +270,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           // Kart arka planını temaya uyumlu hale getir
-          color: isDark ? Colors.grey.shade900 : Colors.white, // DÜZELTİLDİ
+          color: isDark ? Colors.grey.shade900 : Colors.white, 
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Form(
@@ -291,7 +291,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       filled: true,
                       // Textfield içi karanlık/aydınlık mod ayarı
-                      fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50], // DÜZELTİLDİ
+                      fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50], 
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {

@@ -209,7 +209,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final isDark = provider.themeMode == ThemeMode.dark;
 
-    // --- SENİN MANTIĞINLA ROL KONTROLÜ EKLENDİ ---
     // 0: Admin, 2: Çalışan. Bunlardan hiçbiri değilse vatandaştır.
     final bool isNormalUser = authProvider.userRoleId != 0 && authProvider.userRoleId != 2;
 

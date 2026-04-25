@@ -23,10 +23,10 @@ class EventsScreen extends StatefulWidget {
 class _EventsScreenState extends State<EventsScreen> {
   String? selectedCategory;
 
-  // --- YENİ: KAYDEDİLEN ETKİNLİKLERİ TUTAN LİSTE ---
+  //KAYDEDİLEN ETKİNLİKLERİ TUTAN LİSTE 
   final List<EventItem> _savedEvents = [];
 
-  // --- ALT PANEL (BOTTOM SHEET) TASARIMI ---
+  //ALT PANEL TASARIMI 
   void _showEventDetail(BuildContext context, EventItem event, bool isDark) {
     bool isAlreadySaved = _savedEvents.contains(event);
 
@@ -66,7 +66,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 
                 const SizedBox(height: 35),
                 
-                // --- DİNAMİK TAKVİM SİMÜLASYONU BUTONU ---
+                //DİNAMİK TAKVİM SİMÜLASYONU BUTONU
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -83,7 +83,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           SnackBar(content: Text('event_removed'.tr()), backgroundColor: Colors.orange),
                         );
                       } else {
-                        // --- 1. TAKVİM ARAYÜZÜNÜ AÇ (DATE PICKER) ---
+                        // TAKVİM ARAYÜZÜNÜ AÇMA
                         DateTime? parsedDate;
                         try {
                           parsedDate = DateFormat('dd.MM.yyyy').parse(event.date);
@@ -96,8 +96,8 @@ class _EventsScreenState extends State<EventsScreen> {
                           initialDate: parsedDate,
                           firstDate: DateTime.now().subtract(const Duration(days: 365)),
                           lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-                          helpText: 'event_confirm_date'.tr(), // "Tarihi Onaylayın"
-                          confirmText: 'event_add_calendar'.tr(), // "Takvime Ekle"
+                          helpText: 'event_confirm_date'.tr(), 
+                          confirmText: 'event_add_calendar'.tr(), 
                           cancelText: 'cancel'.tr(),
                           builder: (context, child) {
                             // Karanlık mod ve tema uyumu için
@@ -115,7 +115,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           },
                         );
 
-                        // --- 2. KULLANICI ONAYLARSA SİMÜLASYONU BAŞLAT ---
+                        //KULLANICI ONAYLARSA SİMÜLASYONU BAŞLAT
                         if (picked != null) {
                           // Yükleniyor animasyonu aç (Sanki cihazın takvimine yazıyormuş gibi)
                           if (!context.mounted) return;
@@ -125,7 +125,7 @@ class _EventsScreenState extends State<EventsScreen> {
                             builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.blue)),
                           );
 
-                          await Future.delayed(const Duration(milliseconds: 800)); // 0.8 saniye bekle
+                          await Future.delayed(const Duration(milliseconds: 800)); 
                           
                           if (!context.mounted) return;
                           Navigator.pop(context); // Animasyonu kapat
@@ -162,7 +162,7 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  // --- YENİ: KAYDEDİLEN ETKİNLİKLERİ GÖSTEREN EKRAN ---
+  //KAYDEDİLEN ETKİNLİKLERİ GÖSTEREN EKRAN
   void _showSavedEvents(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -171,7 +171,7 @@ class _EventsScreenState extends State<EventsScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
           return Container(
-            height: MediaQuery.of(context).size.height * 0.7, // Ekranın %70'ini kaplasın
+            height: MediaQuery.of(context).size.height * 0.7, 
             padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
             decoration: BoxDecoration(
               color: isDark ? Colors.grey.shade900 : Colors.white,
@@ -247,11 +247,11 @@ class _EventsScreenState extends State<EventsScreen> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     final List<EventItem> dummyEvents = [
-      EventItem('event_1_title'.tr(), '10.11.2025', '20:00', 'event_1_loc'.tr(), 'event_cat_music'.tr(), Icons.music_note, Colors.pink),
-      EventItem('event_2_title'.tr(), '12.11.2025', '19:30', 'event_2_loc'.tr(), 'event_cat_art'.tr(), Icons.theaters, Colors.purple),
-      EventItem('event_3_title'.tr(), '15.11.2025', '14:00', 'event_3_loc'.tr(), 'event_cat_edu'.tr(), Icons.lightbulb, Colors.orange),
-      EventItem('event_4_title'.tr(), '18.11.2025', '16:00', 'event_4_loc'.tr(), 'event_cat_culture'.tr(), Icons.book, Colors.brown),
-      EventItem('event_5_title'.tr(), '22.11.2025', '11:00', 'event_5_loc'.tr(), 'event_cat_sport'.tr(), Icons.sports_soccer, Colors.green),
+      EventItem('event_1_title'.tr(), '10.11.2026', '20:00', 'event_1_loc'.tr(), 'event_cat_music'.tr(), Icons.music_note, Colors.pink),
+      EventItem('event_2_title'.tr(), '12.11.2026', '19:30', 'event_2_loc'.tr(), 'event_cat_art'.tr(), Icons.theaters, Colors.purple),
+      EventItem('event_3_title'.tr(), '15.11.2026', '14:00', 'event_3_loc'.tr(), 'event_cat_edu'.tr(), Icons.lightbulb, Colors.orange),
+      EventItem('event_4_title'.tr(), '18.11.2026', '16:00', 'event_4_loc'.tr(), 'event_cat_culture'.tr(), Icons.book, Colors.brown),
+      EventItem('event_5_title'.tr(), '22.11.2026', '11:00', 'event_5_loc'.tr(), 'event_cat_sport'.tr(), Icons.sports_soccer, Colors.green),
     ];
 
     final List<String> categories = ['events_cat_all'.tr()] + dummyEvents.map((e) => e.category).toSet().toList();
@@ -271,7 +271,6 @@ class _EventsScreenState extends State<EventsScreen> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
-          // --- YENİ: SAĞ ÜSTTEKİ TAKVİM VE BADGE ---
           Stack(
             alignment: Alignment.center,
             children: [
@@ -322,7 +321,7 @@ class _EventsScreenState extends State<EventsScreen> {
               itemCount: filteredEvents.length,
               itemBuilder: (context, index) {
                 final event = filteredEvents[index];
-                bool isSaved = _savedEvents.contains(event); // Kayıtlı mı kontrolü
+                bool isSaved = _savedEvents.contains(event); 
 
                 return Card(
                   elevation: 2,
@@ -339,7 +338,6 @@ class _EventsScreenState extends State<EventsScreen> {
                         Text('${'events_location'.tr()}: ${event.location} (${event.category})', style: TextStyle(color: event.color, fontSize: 12)),
                       ],
                     ),
-                    // Eğer etkinlik takvime eklendiyse ufak bir tik işareti gösterelim
                     trailing: isSaved 
                         ? const Icon(Icons.check_circle, color: Colors.green) 
                         : const Icon(Icons.chevron_right),
