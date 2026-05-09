@@ -16,7 +16,7 @@ class PerformanceScreen extends StatelessWidget {
 
   static const Color primaryBlue = Color(0xFF4094FF);
 
-  // PUAN ALANI 
+  // SCORE AREA 
   Widget _buildPointsHeader(BuildContext context, int currentPoints) {
     return Container(
       width: double.infinity,
@@ -47,7 +47,7 @@ class PerformanceScreen extends StatelessWidget {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      // SABİT YAZILAR JSON'A BAĞLANDI
+                      // Static posts have been linked to JSON
                       title: Text('perf_info_title'.tr()), 
                       content: Text('perf_info_desc'.tr()),
                       actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text('close'.tr()))],
@@ -81,7 +81,8 @@ class PerformanceScreen extends StatelessWidget {
     );
   }
 
-  // ROZET KARTI 
+  // BADGE CARD 
+  /// An interface component that automatically Eeconfigures color, icon, and clickability properties based on the badge's ‘unlocked’ (On/Off) state.
   Widget _buildBadgeCard(BuildContext context, Badge badge) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 

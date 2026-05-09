@@ -2,29 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart'; 
 
-// Providerlar
+// Providers
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 
-// Ekranlar
+// Screens
 import 'screens/login_screen.dart';
 import 'screens/homepage_screen.dart';
 import 'screens/admin_panel.dart'; 
 import 'screens/employee_tasks_screen.dart'; 
 
 void main() async {
-  // EKLENDİ: Dil paketinin başlaması için Flutter motorunu beklet
+  // Wait for the Flutter engine to start before loading the language pack
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
   runApp(
-    // EKLENDİ: Uygulamayı çok dilli yapıyla sarmaladık
+    // We built the app with a multilingual architecture
     EasyLocalization(
       supportedLocales: const [Locale('tr', 'TR'), Locale('en', 'US')],
       path: 'assets/translations', 
       fallbackLocale: const Locale('tr', 'TR'), 
-      useOnlyLangCode: true, // KRİTİK: en-US.json hatasını önler!
+      useOnlyLangCode: true, // Prevents the en-US.json error!
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
@@ -45,14 +45,14 @@ class AkilliBelediyeApp extends StatefulWidget {
 }
 
 class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
-  // LoginScreen instance'ını korumak için
+  // To preserve the LoginScreen instance
   LoginScreen? _loginScreen;
 
   @override
   void initState() {
     super.initState();
 
-    // Uygulama açılınca token kontrolü yap
+    // Check the token when the app opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AuthProvider>(context, listen: false).init();
     });
@@ -67,15 +67,15 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
       title: 'Akıllı Belediye',
       debugShowCheckedModeBanner: false,
 
-      // EKLENDİ: Çok dilli yapı için gerekli MaterialApp ayarları
+      // MaterialApp settings required for a multilingual setup
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       locale: context.locale,
 
-      // TEMA AYARLARI
+      // THEME SETTINGS
       themeMode: themeProvider.themeMode,
 
-      // Aydınlık Tema
+      // Bright Theme
       theme: ThemeData(
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
@@ -83,7 +83,7 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
         brightness: Brightness.light,
       ),
 
-      // Karanlık Tema
+      // Dark Theme
       darkTheme: ThemeData(
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: const Color(0xFF121212),
@@ -91,7 +91,7 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
         brightness: Brightness.dark,
       ),
 
-      // YAZI BOYUTU AYARI
+      // FONT SIZE SETTING
       builder: (context, child) {
         final mediaQueryData = MediaQuery.of(context);
 
@@ -109,14 +109,12 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
   }
 
   Widget _buildHomeScreen(AuthProvider authProvider) {
-    // --- GEÇİCİ TASARIM MODU ---
-    // return const HomeScreen();
-    // ------------------------------------------------
+
     switch (authProvider.state) {
       case AuthState.initial:
       case AuthState.loading:
 
-        // Yükleniyor Ekranı
+        // Loading Screen
         return const Scaffold(
           body: Center(
             child: Column(
@@ -136,13 +134,13 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
         );
 
       case AuthState.authenticated:
-        _loginScreen = null; // Giriş başarılıysa login ekranını hafızadan sil
+        _loginScreen = null; // If the login is successful, clear the login screen from memory
 
-        // --- BURASI DEĞİŞTİ: ROL KONTROLÜ EKLENDİ ---
+        // --- ROLE CHECK ADDED ---
 
         // 0: Admin
-        // 2: Çalışan (Employee)
-        // Diğer: Vatandaş
+        // 2: Employee
+        // Other: Citizen
 
         if (authProvider.userRoleId == 0) {
           return const AdminDashboardScreen();
@@ -157,10 +155,10 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
       case AuthState.unauthenticated:
       case AuthState.error:
 
-        // Hata veya giriş yapılmamışsa Login ekranı
-        _loginScreen ??= const LoginScreen();
+      // If an error occurs or no login is made, display the login screen
+      _loginScreen ??= const LoginScreen();
 
-        return _loginScreen!;
+      return _loginScreen!;
     }
   }
 }

@@ -67,6 +67,7 @@ class UserModel {
   }
 
   /// Create a copy with updated fields
+  ///Creates a new object by modifying only specific fields without altering the existing user object
   UserModel copyWith({
     String? uid,
     String? email,
@@ -80,7 +81,7 @@ class UserModel {
     int? roleId,
   }) {
     return UserModel(
-      uid: uid ?? this.uid,
+      uid: uid ?? this.uid, // If a new value has been assigned, use it; otherwise, keep the old one
       email: email ?? this.email,
       name: name ?? this.name,
       phone: phone ?? this.phone,
@@ -91,11 +92,13 @@ class UserModel {
       role: role ?? this.role,
       roleId: roleId ?? this.roleId,
       createdAt: createdAt,
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now(), // Refresh the last modified date in real time when a copy is made
     );
   }
 
   /// Get display name (name or email)
+  /// Smart helper to display the username on the screen
+  /// If the user has no name, it displays the part of the email address before the ‘@’ symbol 
   String get displayName => name ?? email.split('@').first;
   
   /// Get full location string (district + neighborhood)

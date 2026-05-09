@@ -23,7 +23,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     super.dispose();
   }
 
-  // backendValue veritabanına gider, uiKey ise ekranda çevrilerek gösterilir
+  // backendValue is stored in the database, while uiKey is displayed on the screen
   final List<Map<String, dynamic>> _emergencyTypes = [
     {'backendValue': 'YANGIN', 'uiKey': 'cat_fire', 'icon': Icons.local_fire_department, 'color': Colors.red},
     {'backendValue': 'GAZ KAÇAĞI', 'uiKey': 'cat_gas', 'icon': Icons.gas_meter, 'color': Colors.orange},
@@ -33,7 +33,10 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     {'backendValue': 'DİĞER', 'uiKey': 'cat_other', 'icon': Icons.report_problem, 'color': Colors.blueGrey},
   ];
 
-Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async {
+  /// A defensive function that attempts to determine the user's location during a panic situation as quickly as possible (LocationAccuracy.low)
+  /// within 5 seconds (Timeout). If the sensor fails to respond, it ensures the uninterrupted transmission of the emergency alert (Fail-Safe)
+  /// using fallback coordinates rather than causing the system to crash.
+  Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async {
     setState(() => _isLoading = true); 
 
     try {
@@ -51,15 +54,15 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
 
       Position? position;
       try {
-        // 5 saniye içinde gerçek konumu bulmaya çalış
+        // Try to determine the actual location within 5 seconds
         position = await Geolocator.getLastKnownPosition();
         position ??= await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.low,
-          timeLimit: const Duration(seconds: 5), // 5 Saniye sınırımız
+          timeLimit: const Duration(seconds: 5), // Our 5-second limit
         );
       } catch (e) {
-        // Eğer 5 saniyede bulamazsa HATA VERME!
-        // Emülatör tıkandığı için ona zorla Ankara koordinatlarını ver ve işleme devam et.
+        // If it can't find it within 5 seconds, DO NOT RETURN AN ERROR!
+        // Since the emulator is stuck, force it to use the Ankara coordinates and continue processing.
         debugPrint("Gerçek konum bulunamadı, Emülatör/Yedek koordinat kullanılıyor...");
         position = Position(
           latitude: 39.9334,
@@ -72,7 +75,7 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
       String addressToSave = "${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}";
       
       try {
-        // Adresi metne çevirirken de donmasını engellemek için 4 saniye sınır koyduk
+        // We set a 4-second limit to prevent it from freezing while converting the address to text
         List<Placemark> placemarks = await placemarkFromCoordinates(
           position.latitude, 
           position.longitude
@@ -99,7 +102,7 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
       if (!mounted) return;
       setState(() => _isLoading = false);
       
-      // Başarı ekranını göster
+      // Display the success screen
       _showSuccessDialog(uiKey.tr(), addressToSave);
 
     } catch (e) {
@@ -116,7 +119,7 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         icon: const Icon(Icons.check_circle, size: 60, color: Colors.green),
-        title: Text('emerg_success_title'.tr()),
+        title: Text('emerg_success_title'.tr(),style: const TextStyle(fontWeight: FontWeight.bold,),),
         content: Text(
           "$translatedType ${'emerg_success_desc'.tr()}\n\n$locationInfo",
           textAlign: TextAlign.center,
@@ -134,6 +137,8 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
     );
   }
 
+  /// A dynamic decision window that offers the user two different routing options—“Automatic Location” and “Manual Location”—and 
+  /// prevents empty or meaningless data (garbage data) in the database by requiring a description to be entered for the ‘OTHER’ option.
   void _showLocationDialog(String backendValue, String uiKey) {
     _descriptionController.clear();
     bool isOtherOption = (backendValue == 'DİĞER');
@@ -215,7 +220,7 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
                     icon: const Icon(Icons.map, color: Colors.red),
                     label: Text('emerg_btn_manual_loc'.tr(), style: const TextStyle(color: Colors.red)),
                     onPressed: (isOtherOption && isDescEmpty) ? null : () async { 
-                      Navigator.pop(ctx); // Önce küçük diyaloğu kapat
+                      Navigator.pop(ctx); // First, close the small dialog
                       
                       final result = await Navigator.push(
                         context, 
@@ -339,16 +344,16 @@ Future<void> _getCurrentLocationAndSend(String backendValue, String uiKey) async
             
             Expanded(
               child: Container(
-                alignment: Alignment.center, // Metni dikey ve yatayda ortalar
+                alignment: Alignment.center, // Center the text vertically and horizontally
                 child: Text(
                   uiKey.tr(),
                   textAlign: TextAlign.center, 
-                  maxLines: 3, // Uzun metinlerin 3 satıra kadar inmesine izin verdik
-                  overflow: TextOverflow.ellipsis, // Eğer 3 satırı da geçerse sonuna "..." koyar
+                  maxLines: 3, // We've allowed long texts to wrap to up to three lines
+                  overflow: TextOverflow.ellipsis, // If it exceeds 3 lines, it adds “...” at the end
                   style: TextStyle(
-                    fontSize: 14, // Boyutu sabitledik (küçülmeyecek)
+                    fontSize: 14, // We've set the size (it won't shrink)
                     fontWeight: FontWeight.bold,
-                    height: 1.2, // Alt satıra geçtiğinde satırlar arası boşluk
+                    height: 1.2, // Line spacing when moving to the next line
                     color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),

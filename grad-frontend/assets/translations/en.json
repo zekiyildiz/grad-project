@@ -561,6 +561,7 @@
   "inst_temizlik": "Sanitation Dept.",
   "inst_emniyet": "Police / Fire Dept",
   "inst_other": "Other Units",
+  "inst_fire": "Fire Department",
 
   "complaint_urgent_label": "Urgent Situation?",
   "complaint_urgent_hint": "Mark this if there is a threat to life or property safety.",
@@ -680,6 +681,16 @@
   "manual_loc_btn": "CONFIRM LOCATION & SEND",
   "manual_loc_error": "Please select a location from the map.",
 
-  "emerg_dialog_error_empty": "Please describe the situation"
+  "emerg_dialog_error_empty": "Please describe the situation",
+
+  "admin_detail_desc": "Description",
+  "admin_detail_no_desc": "No description provided.",
+  "admin_detail_location": "Full Location",
+  "admin_detail_photo": "Attached Photo",
+  "admin_detail_no_photo": "No photo attached by the citizen.",
+  "admin_detail_inst": "Assigned Institution",
+  "admin_loc_unknown": "UNKNOWN",
+  "admin_loc_map": "SELECTED FROM MAP",
+  "admin_loc_other": "OTHER REGIONS"
 
 }

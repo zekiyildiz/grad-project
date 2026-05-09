@@ -16,31 +16,31 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // Backend'den gelen iç içe JSON paketlerini güvenle açan fonksiyon
+  // A function that safely parses nested JSON objects received from the backend
   Map<String, dynamic> _extractUserData(dynamic response) {
     if (response is! Map<String, dynamic>) return {};
 
-    // 1. Durum: Backend { "success": true, "data": { "user": {...}, "statistics": {...} } } dönüyorsa
+    // Case 1: If the backend returns { “success”: true, “data”: { ‘user’: {...}, “statistics”: {...} } }
     if (response.containsKey('data')) {
       final data = response['data'];
       
-      // GetProfile isteği durumu
+      // GetProfile request status
       if (data is Map<String, dynamic> && data.containsKey('user')) {
         return data['user'] as Map<String, dynamic>;
       }
       
-      // UpdateProfile isteği durumu (direkt user döner)
+      // UpdateProfile request status (returns the user directly)
       if (data is Map<String, dynamic>) {
         return data;
       }
     }
 
-    // 2. Durum: Eğer ApiClient data'yı zaten dışarı çıkartıp gönderdiyse
+    // Case 2: If the ApiClient has already retrieved and sent the data
     if (response.containsKey('user')) {
       return response['user'] as Map<String, dynamic>;
     }
 
-    // Hiçbiri değilse response'un kendisini kullan
+    // If none of the above, use the response itself
     return response;
   }
 
@@ -53,7 +53,7 @@ class UserProvider extends ChangeNotifier {
     try {
       final response = await _userService.getProfile();
       
-      // Paketi güvenle aç ve kullanıcının gerçek verilerini al
+      // Safely open the package and retrieve the user's actual data
       final userData = _extractUserData(response); 
       
       _profile = UserModel.fromJson(userData);
@@ -87,7 +87,7 @@ class UserProvider extends ChangeNotifier {
         address: address,
       );
       
-      // Güncellenmiş paketi güvenle aç
+      // Safely open the updated package
       final userData = _extractUserData(response);
       
       _profile = UserModel.fromJson(userData);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/report_service.dart';
+import '../utils/admin_helpers.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({Key? key}) : super(key: key);
@@ -12,7 +13,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final ReportService _reportService = ReportService();
   late Future<List<dynamic>> _reportsFuture;
 
-  // Filtreleme için aktif durumu tutan değişken
+  // Variable that tracks the active status for filtering
   String _currentFilter = 'ALL'; // ALL, ONGOING, RESOLVED
 
   @override
@@ -25,21 +26,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     setState(() {
       _reportsFuture = _reportService.getMyReports();
     });
-  }
-
-  String _getInstitutionName(String? code) {
-    if (code == null || code.isEmpty || code == 'ATANMADI' || code == 'PENDING' || code == 'STATUS_PENDING') return 'inst_unassigned'.tr();
-    String cleanCode = code.toUpperCase().replaceAll('INST_', '');
-    switch (cleanCode) {
-      case 'FEN_ISLERI': return 'inst_fen'.tr();
-      case 'TEDAS': return 'inst_tedas'.tr(); 
-      case 'ASKI': return 'inst_aski'.tr(); 
-      case 'ZABITA': return 'inst_zabita'.tr();
-      case 'TEMIZLIK': return 'inst_temizlik'.tr();
-      case 'EMNIYET': return 'inst_emniyet'.tr();
-      case 'ITFAIYE': return 'İtfaiye Daire Başkanlığı';
-      default: return code;
-    }
   }
 
   Map<String, dynamic> _getCategoryDetails(String category) {
@@ -204,7 +190,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     children: [
                       const Icon(Icons.business, color: Colors.blue, size: 24),
                       const SizedBox(width: 10),
-                      Expanded(child: Text(_getInstitutionName(assignedTo), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16))),
+                      Expanded(child: Text(AdminHelpers.getInstitutionName(assignedTo), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16))),
                     ],
                   ),
                 ),
@@ -234,6 +220,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// A component that renders the filter buttons at the top of the screen and, when clicked, 
+  /// triggers an immediate re-render by updating the UI state (_currentFilter) instead of creating a new network request.
   Widget _buildFilterChip(String label, String filterValue, bool isDark) {
     bool isSelected = _currentFilter == filterValue;
     return ChoiceChip(
@@ -283,7 +271,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
             );
           }
 
-          // FİLTRELEME MANTIĞI EKLENDİ
+          // FILTERING
+          // Data retrieved once from the backend (snapshot.data) is filtered directly in device memory (RAM)
+          // to avoid placing an additional load on the server. This ensures zero latency when switching between tabs.
           List<dynamic> filteredReports = reports.where((report) {
             if (_currentFilter == 'ALL') return true;
             String status = report['status']?.toString().toUpperCase() ?? 'PENDING';
@@ -296,7 +286,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
             return true;
           }).toList();
 
-          // Sıralama (Yeniden Eskiye)
+          // Sorting (Newest to Oldest)
+          // To ensure the most recent complaint appears at the top from a user experience perspective,
+          // an algorithm that converts ISO dates in string format to DateTime objects and sorts them in reverse chronological order.
           filteredReports.sort((a, b) {
             DateTime dateA = DateTime.tryParse(a['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
             DateTime dateB = DateTime.tryParse(b['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -326,7 +318,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: RefreshIndicator(
                   onRefresh: () async => _fetchReports(),
                   child: filteredReports.isEmpty 
-                    ? Center(child: Text('admin_no_match'.tr(), style: const TextStyle(color: Colors.grey))) // Filtre sonucu boşsa
+                    ? Center(child: Text('admin_no_match'.tr(), style: const TextStyle(color: Colors.grey))) // If the filter result is empty
                     : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                     itemCount: filteredReports.length,
@@ -427,7 +419,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     const Icon(Icons.business, size: 14, color: Colors.orange),
                                     const SizedBox(width: 4),
                                     Text("${'inst_label'.tr()}: ", style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700)),
-                                    Text(_getInstitutionName(assignedTo), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange)),
+                                    // OVERFLOW PROTECTION: Adding Flexible
+                                    Flexible(
+                                      child: Text(
+                                        AdminHelpers.getInstitutionName(assignedTo), 
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange),
+                                        // If the text doesn't fit, it displays "..." instead of overflowing
+                                        overflow: TextOverflow.ellipsis, 
+                                        maxLines: 1,
+                                      ),
+                                    ),
                                   ]),
                                 ]
                               ],

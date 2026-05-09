@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_vision/flutter_vision.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:ui' as ui; // Resim decode işlemi için gerekli
+import 'dart:ui' as ui; // Required for image decoding
 
 class VisionService {
   late FlutterVision vision;
@@ -12,42 +12,42 @@ class VisionService {
     vision = FlutterVision();
   }
 
-  // 1. Modeli Yükleme Fonksiyonu
+  // 1. Model Loading Function
   Future<void> loadModel() async {
     if (!isLoaded) {
       await vision.loadYoloModel(
-        modelPath: 'assets/model/best_float32.tflite', // Model dosyası
-        labels: 'assets/model/labels.txt', // Etiket dosyası
-        modelVersion: "yolov8", // YOLOv8 modelleri için standart
-        quantization: false, // float32 kullandığımız için false
-        numThreads: 1, // İşlemci kullanım ayarı
+        modelPath: 'assets/model/best_float32.tflite', // Model file
+        labels: 'assets/model/labels.txt', // Label file
+        modelVersion: "yolov8", // Standard for YOLOv8 models
+        quantization: false, // Since we're using float32, false
+        numThreads: 1, // CPU usage setting
         useGpu:
-            false, // Mobil GPU kullanımı (bazen hata verebilir, false güvenlidir)
+            false, // Use the mobile GPU (may sometimes cause errors; setting to false is safe)
       );
       isLoaded = true;
       print("Yapay Zeka Modeli Yüklendi! 🚀");
     }
   }
 
-  // 2. Fotoğraf Analiz Fonksiyonu
+  // 2. Photo Analysis Feature
   Future<List<Map<String, dynamic>>> runInference(XFile imageFile) async {
-    // Görseli byte formatına çevir
+    // Convert the image to byte format
     Uint8List imageBytes = await imageFile.readAsBytes();
 
-    // Resmi decode et (Boyutlarını almak için)
+    // Decode the image (to get its dimensions)
     final codec = await ui.instantiateImageCodec(imageBytes);
     final frameInfo = await codec.getNextFrame();
     final imageHeight = frameInfo.image.height;
     final imageWidth = frameInfo.image.width;
 
-print("🚀🚀🚀 DİKKAT: YENİ KOD VE YENİ MODEL ÇALIŞIYOR! EŞİK 0.20 🚀🚀🚀");
-    // Tahmin işlemini başlat
+    print("🚀🚀🚀 DİKKAT: YENİ KOD VE YENİ MODEL ÇALIŞIYOR! EŞİK 0.20 🚀🚀🚀");
+    // Start the prediction process
     final result = await vision.yoloOnImage(
       bytesList: imageBytes,
       imageHeight: imageHeight,
       imageWidth: imageWidth,
-      iouThreshold: 0.45, // Kutu çakışma hassasiyeti
-      confThreshold: 0.2, // Güven eşiği 
+      iouThreshold: 0.45, // Box collision sensitivity
+      confThreshold: 0.4, // Confidence threshold 
     );
 
     if (result.isNotEmpty) {
@@ -59,7 +59,7 @@ print("🚀🚀🚀 DİKKAT: YENİ KOD VE YENİ MODEL ÇALIŞIYOR! EŞİK 0.20 �
     return result;
   }
 
-  // 3. Modeli Kapatma (Bellek Temizliği)
+  // 3. Closing the Model (Memory Cleanup)
   Future<void> closeModel() async {
     if (isLoaded) {
       await vision.closeYoloModel();

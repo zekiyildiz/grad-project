@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/announcement_model.dart';
 
 class AnnouncementService {
- // Artık elle adres yazmıyoruz, ApiConfig'den çekiyoruz:
+ // We no longer enter the address manually, we retrieve it from ApiConfig
   final String url = ApiConfig.announcementsUrl;
 
   Future<List<Announcement>> fetchAnnouncements() async {

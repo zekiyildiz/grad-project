@@ -9,6 +9,7 @@ class ContactCard extends StatelessWidget {
   final Color iconColor;
   final VoidCallback onTap;
 
+  /// Instead of manually rewriting contact cards over and over again, a parametric and reusable UI component was created
   const ContactCard({
     Key? key,
     required this.title,
@@ -25,7 +26,7 @@ class ContactCard extends StatelessWidget {
     return Card(
       elevation: 1,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
-      // Karanlık mod uyumlu kart rengi
+      // Dark mode-compatible card color
       color: isDark ? Colors.grey.shade900 : Colors.white,
       child: ListTile(
         leading: Icon(icon, color: iconColor, size: 30),
@@ -50,6 +51,8 @@ class ContactCard extends StatelessWidget {
 class ContactScreen extends StatelessWidget {
   const ContactScreen({Key? key}) : super(key: key);
 
+  /// A safe transition function that checks whether the target app is installed on the device (using `canLaunchUrl`)
+  /// when launching external apps (Mail, Maps, Browser) via a URI, and catches potential crashes using a try-catch block.
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     try {
@@ -83,7 +86,7 @@ class ContactScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18, 
                 fontWeight: FontWeight.bold, 
-                // Karanlık moda özel başlık rengi
+                // Custom header color for dark mode
                 color: isDark ? Colors.white : const Color(0xFF343A40)
               ),
             ),

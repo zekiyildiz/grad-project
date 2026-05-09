@@ -22,11 +22,8 @@ class UserService {
   }) async {
     final body = <String, dynamic>{};
     
-    // 🌟 KRİTİK: Backend "fullName" bekliyor
     if (name != null) body['fullName'] = name; 
-    
     if (phone != null) body['phone'] = phone;
-    // 🌟 KRİTİK: Adresi veritabanına gönderiyoruz
     if (address != null) body['address'] = address; 
     if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
 

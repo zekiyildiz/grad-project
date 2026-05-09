@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { ReportService } from './service';
 
+//It receives the request from routes.ts, processes the data within it, and forwards it to service.ts to handle the actual task
+
 const reportService = new ReportService();
 
-// Bildirimleri Getir
+// Get Notifications
 export const getMyNotifications = async (req: any, res: Response) => {
     try {
         const notifications = await reportService.getMyNotifications(req.user.uid);
@@ -13,17 +15,17 @@ export const getMyNotifications = async (req: any, res: Response) => {
     }
 };
 
-// Okundu Yap
+// Mark as Read
 export const markNotificationAsRead = async (req: Request, res: Response) => {
     try {
-        await reportService.markAsRead(req.params.id);
-        res.status(200).json({ success: true });
+        await reportService.markAsRead(req.params.id); // Send the ID from the URL to the service
+        res.status(200).json({ success: true }); // If successful, return 200
     } catch (error) {
-        res.status(500).json({ message: "Güncellenemedi" });
+        res.status(500).json({ message: "Güncellenemedi" }); // If it fails, return 500 (Server Error)
     }
 };
 
-// Hepsini Okundu Yap
+// Mark All as Read
 export const markAllNotificationsAsRead = async (req: any, res: Response) => {
     try {
         await reportService.markAllAsRead(req.user.uid);
@@ -33,7 +35,7 @@ export const markAllNotificationsAsRead = async (req: any, res: Response) => {
     }
 };
 
-// Bildirim Sil
+// Delete Notification
 export const deleteNotification = async (req: Request, res: Response) => {
     try {
         await reportService.deleteNotification(req.params.id);
@@ -43,38 +45,40 @@ export const deleteNotification = async (req: Request, res: Response) => {
     }
 };
 
-// --- MEVCUT RAPOR FONKSİYONLARI ---
+// CURRENT REPORT FUNCTIONS
 export const createReport = async (req: any, res: Response) => {
     try {
+        //Urgency Check
         const isUrgentFlag = req.body.isUrgent === true || req.body.isUrgent === 'true';
 
-        // Flutter'dan dağınık gelen konum verilerini "location" kutusunda (objesinde) topluyoruz
+        // We're collecting the location data coming in from Flutter into the “location” field (object)
         const reportData = {
-            userId: req.user.uid,
-            ...req.body,
+            userId: req.user.uid, // The user ID of the user passing through the firewall (authMiddleware)
+            ...req.body, // Save all other data from Flutter (photo link, category, etc.) to the package
+            // Flutter had sent the latitude and longitude separately. To keep the database clean, we're storing them in a new subfolder named “location.”
             location: {
                 latitude: req.body.latitude,
                 longitude: req.body.longitude,
                 address: req.body.address
             },
-            isUrgent: isUrgentFlag 
+            isUrgent: isUrgentFlag //Add the urgency status to the package
         };
 
-        // Root dizinindeki eski dağınık verileri veritabanında kalabalık yapmasın diye siliyoruz
+        //Garbage Collection: We delete the copies of the data we’ve placed in the `location` object that are still in the main array.
         delete reportData.latitude;
         delete reportData.longitude;
         delete reportData.address;
 
+        // We're passing it to service.ts to perform the actual save.
         const report = await reportService.createReport(reportData);
-        
-        res.status(201).json(report);
+        res.status(201).json(report); // HTTP status code 201 means “Created (Something new has been created).”
     } catch (error) {
-        res.status(500).json({ message: "Şikayet oluşturulamadı" });
+        res.status(500).json({ message: "Şikayet oluşturulamadı" }); // We return a 500 code (Internal Server Error) to prevent the system from crashing
     }
 };
 
 export const getMyReports = async (req: any, res: Response) => {
-    const reports = await reportService.getMyReports(req.user.uid);
+    const reports = await reportService.getMyReports(req.user.uid); //Retrieve all reports for this user
     res.status(200).json(reports);
 };
 
@@ -98,8 +102,6 @@ export const getReportById = async (req: Request, res: Response) => {
     res.status(200).json(report);
 };
 
-import * as admin from 'firebase-admin'; 
-
 export const updateReportCategory = async (req: any, res: any, next: any) => {
     try {
         const { id } = req.params;
@@ -109,14 +111,8 @@ export const updateReportCategory = async (req: any, res: any, next: any) => {
             return res.status(400).json({ error: 'Yeni kategori belirtilmedi.' });
         }
 
-        // Firestore veritabanında şikayetin kategorisini güncelle
-        const db = admin.firestore();
-        await db.collection('reports').doc(id).update({
-            category: category,
-            updatedAt: new Date().toISOString()
-        });
-
-        console.log(`✅ Rapor (${id}) kategorisi '${category}' olarak güncellendi.`);
+        // We are delegating the database operation directly to the service layer
+        await reportService.updateReportCategory(id, category);
 
         return res.status(200).json({ 
             message: 'Kategori başarıyla güncellendi',
@@ -124,6 +120,6 @@ export const updateReportCategory = async (req: any, res: any, next: any) => {
         });
     } catch (error) {
         console.error('Kategori güncellenirken hata:', error);
-        next(error); // Hata yakalayıcıya gönder
+        res.status(500).json({ message: "Kategori güncellenemedi" });
     }
 };

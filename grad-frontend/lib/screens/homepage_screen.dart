@@ -25,7 +25,11 @@ import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/weather_service.dart';
 import '../services/notification_service.dart'; 
+import '../utils/home_ui_helpers.dart';
+import '../widgets/home_drawer.dart';
 
+// By managing the functional buttons on the app's home screen through a centralized list, this approach enables 
+// the process of adding new features without interfering with the design code
 class QuickActionItem {
   final String id;
   final IconData icon;
@@ -157,10 +161,8 @@ class _HomepageScreenState extends State<HomepageScreen> {
     }
   }
 
- 
-
-  // Performans Sayfası da kilit listesine eklendi
-void _navigateTo(Widget screen) {
+  // The Performance Page has also been added to the lock list
+  void _navigateTo(Widget screen) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
@@ -175,38 +177,12 @@ void _navigateTo(Widget screen) {
     );
 
     if (requiresLogin && !authProvider.isAuthenticated) {
-      _showLoginWarningDialog(context, isDark);
+      HomeUIHelpers.showLoginWarningDialog(context, isDark);
     } else {
       Navigator.push(context, MaterialPageRoute(builder: (context) => screen)).then((_) {
          _fetchUnreadNotificationCount(); 
       });
     }
-  }
-
-  void _showLoginWarningDialog(BuildContext context, bool isDark) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.lock_outline, color: Colors.orange.shade700, size: 28),
-            const SizedBox(width: 10),
-            Expanded(child: Text("login_required_title".tr(), style: const TextStyle(fontWeight: FontWeight.bold))),
-          ],
-        ),
-        content: Text("login_required_desc".tr(), style: TextStyle(color: isDark ? Colors.grey.shade300 : Colors.black87)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text("cancel".tr())),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-            onPressed: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())); },
-            child: Text("login_btn".tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showCustomizeDialog() {
@@ -220,7 +196,7 @@ void _navigateTo(Widget screen) {
 
           return AlertDialog(
             backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
-            title: Text('home_edit_title'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            title: Text('home_edit_title'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87,fontWeight: FontWeight.bold,)),
             content: SizedBox(
               width: double.maxFinite,
               child: Column(
@@ -325,9 +301,9 @@ void _navigateTo(Widget screen) {
         const SizedBox(height: 5),
         SizedBox(
           width: 90,
-          height: 35, // Sabit yükseklik ile hizalamayı korur
+          height: 35, // Maintains alignment with a fixed height
           child: Center(
-            child: FittedBox( // Metin sığmazsa fontu otomatik küçültür
+            child: FittedBox( // If the text doesn't fit, the font size is automatically reduced
               fit: BoxFit.scaleDown,
               child: Text(
                 action.labelKey.tr(),
@@ -361,51 +337,6 @@ void _navigateTo(Widget screen) {
               Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-// Afişlere Tıklandığında Açılacak Detay Paneli
-  void _showBannerDetail(BuildContext context, String title, String desc, String imgPath) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey.shade900 : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(10)))),
-            const SizedBox(height: 20),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Image.asset(imgPath, width: double.infinity, height: 180, fit: BoxFit.cover),
-            ),
-            const SizedBox(height: 20),
-            Text(title, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-            const SizedBox(height: 10),
-            Text(desc, style: TextStyle(fontSize: 15, height: 1.4, color: isDark ? Colors.grey.shade300 : Colors.grey.shade700)),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('ok_btn'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
         ),
       ),
     );
@@ -473,98 +404,10 @@ void _navigateTo(Widget screen) {
           ),
         ],
       ),
-      drawer: Drawer(
-  backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
-  child: ListView(
-    padding: EdgeInsets.zero,
-    children: [
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 50, 16, 20),
-        decoration: const BoxDecoration(color: primaryBlue),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.person, size: 35, color: primaryBlue)),
-            const SizedBox(height: 15),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text('app_name'.tr(), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-            ListTile(
-              leading: const Icon(Icons.home, color: Colors.blue),
-              title: Text('home'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person, color: Colors.blue),
-              title: Text('home_profile'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _navigateTo(const ProfileScreen()); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.notifications, color: Colors.blue),
-              title: Row(
-                children: [
-                  Text('home_notifications'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-                  if (_unreadNotifCount > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
-                      child: Text('$_unreadNotifCount', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ],
-              ),
-              onTap: () { Navigator.pop(context); _navigateTo(const NotificationScreen()); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.history, color: Colors.blue),
-              title: Text('home_history'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _navigateTo(const HistoryScreen()); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today, color: Colors.blue),
-              title: Text('home_events'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _navigateTo(const EventsScreen()); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.poll, color: Colors.blue),
-              title: Text('home_survey'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _navigateTo(const SurveyScreen()); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.emoji_events, color: Colors.blue),
-              title: Text('home_performance'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _navigateTo(const PerformanceScreen()); },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.help_outline, color: Colors.blueGrey),
-              title: Text('home_contact'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _navigateTo(const ContactScreen()); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.help_outline, color: Colors.blueGrey),
-              title: Text('home_help'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _navigateTo(const HelpScreen()); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings, color: Colors.blueGrey),
-              title: Text('settings_title'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _navigateTo(const SettingsScreen()); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: Text('home_logout'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () { Navigator.pop(context); _showLogoutConfirmDialog(context); },
-            ),
-          ],
-        ),
+      drawer: HomeDrawer(
+        unreadNotifCount: _unreadNotifCount,
+        onNavigate: _navigateTo,
+        onLogout: () => _showLogoutConfirmDialog(context),
       ),
       body: Column(
         children: [
@@ -592,7 +435,7 @@ void _navigateTo(Widget screen) {
                   ),
                   const SizedBox(height: 16),
 
-                  // Tıklanabilir ve Veri Taşıyan Slider
+                  // Clickable Slider with Data
                   CarouselSlider(
                     options: CarouselOptions(
                       height: 180.0,
@@ -623,11 +466,12 @@ void _navigateTo(Widget screen) {
                       return Builder(
                         builder: (BuildContext context) {
                           return GestureDetector(
-                            onTap: () => _showBannerDetail(
+                            onTap: () => HomeUIHelpers.showBannerDetail(
                               context, 
                               bannerData['titleKey']!.tr(), 
                               bannerData['descKey']!.tr(),  
-                              bannerData['img']!
+                              bannerData['img']!,
+                              primaryBlue
                             ),
                             child: Container(
                               width: MediaQuery.of(context).size.width,
@@ -672,6 +516,7 @@ void _navigateTo(Widget screen) {
                         children: [
                           Expanded(
                             child: FutureBuilder<Map<String, dynamic>>(
+                              /// An external integration module that helps citizens with their daily planning by asynchronously fetching data from the OpenWeatherMap service.
                               future: _weatherService.fetchWeather(),
                               builder: (context, snapshot) {
                                 String temp = "--°C";
@@ -711,7 +556,7 @@ void _navigateTo(Widget screen) {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          // DUYURULAR KISMI BAŞLANGICI
+                          // START OF THE ANNOUNCEMENTS SECTION
                           Expanded(
                             key: ValueKey(context.locale.languageCode), 
                             child: FutureBuilder<List<Announcement>>(
@@ -728,7 +573,7 @@ void _navigateTo(Widget screen) {
                                 }
 
                                 final announcements = snapshot.data ?? [];
-
+                                
                                 if (announcements.isEmpty) {
                                   return Container(
                                     padding: const EdgeInsets.all(10),
@@ -766,13 +611,13 @@ void _navigateTo(Widget screen) {
                                                     'home_announcements'.tr(), 
                                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
                                                     maxLines: 1, 
-                                                    overflow: TextOverflow.ellipsis, // Sığmazsa "..." yapar
+                                                    overflow: TextOverflow.ellipsis, // If it doesn't fit, it displays “...”
                                                   ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                          const SizedBox(width: 8), // Araya güvenli tampon boşluk koyduk
+                                          const SizedBox(width: 8), // We added a safe buffer space in between
                                           GestureDetector(
                                             onTap: () => _navigateTo(const AllAnnouncementsScreen()),
                                             child: Text('view_all'.tr(), style: TextStyle(color: Colors.blue.shade400, fontSize: 10, fontWeight: FontWeight.bold)),
@@ -780,6 +625,8 @@ void _navigateTo(Widget screen) {
                                         ],
                                       ),
                                       const Divider(height: 12), 
+                                      /// An interactive component that displays the municipality's latest announcements in a carousel format, 
+                                      /// maximizing the flow of information with an auto-scroll feature.
                                       SizedBox(
                                         height: 60, 
                                         child: CarouselSlider(
@@ -795,7 +642,7 @@ void _navigateTo(Widget screen) {
                                               onTap: () => _navigateTo(AnnouncementDetailScreen(announcement: ann)),
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                                mainAxisAlignment: MainAxisAlignment.center, // Ortaya hizaladık
+                                                mainAxisAlignment: MainAxisAlignment.center, // We centered it
                                                 children: [
                                                   FittedBox(
                                                     fit: BoxFit.scaleDown,
@@ -900,6 +747,6 @@ void _navigateTo(Widget screen) {
           ),
         ],
       ),
-    );      
+    );
   }
 }

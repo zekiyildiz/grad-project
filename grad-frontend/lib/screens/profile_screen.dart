@@ -6,6 +6,7 @@ import '../providers/user_provider.dart';
 import '../services/report_service.dart';
 import 'edit_profile_screen.dart';
 
+/// Independent “Reusable” widget classes were created for cards with the same design in the UI layer
 class InfoCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -26,7 +27,7 @@ class InfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+            Text(title, style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,fontWeight: FontWeight.bold)),
             const SizedBox(height: 5),
             Row(
               children: [
@@ -60,10 +61,10 @@ class StatCard extends StatelessWidget {
           Icon(icon, size: 45, color: color), 
           const SizedBox(height: 8),
           
-          // HİZALAMA İÇİN: Metin kısmı esneyip sayıları dibe eşit iter
+          // FOR ALIGNMENT: The text section expands and pushes the numbers to the bottom
           Expanded(
             child: Container(
-              alignment: Alignment.center, // Tek satır olanı dikeyde ortalar
+              alignment: Alignment.center, // Center the single-line text vertically
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
@@ -123,6 +124,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authUser = authProvider.user;
     final profile = userProvider.profile;
     
+    // Checks whether the profile data retrieved via the session (Auth) matches. This is a security measure 
+    //to prevent the old user, whose data remains in RAM, from appearing in the UI if the user has switched accounts.
     bool isStale = (profile != null && authUser != null && profile.email != authUser.email);
     final activeProfile = isStale ? null : profile;
 
@@ -241,11 +244,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text('prof_stats'.tr(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
                     const Divider(height: 15, thickness: 1),
                     
-                    // IntrinsicHeight ile tüm kartların boyunu eşitledik
+                    // We used `IntrinsicHeight` to make all cards the same height
                     IntrinsicHeight(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        crossAxisAlignment: CrossAxisAlignment.stretch, // Hepsini aynı boya zorla
+                        crossAxisAlignment: CrossAxisAlignment.stretch, // Force them all to the same size
                         children: [
                           StatCard(icon: Icons.report_problem, label: isEmployee ? 'prof_stat_total'.tr() : 'prof_total_complaints'.tr(), count: _totalCount.toString(), color: Colors.red.shade700),
                           StatCard(icon: Icons.check_circle, label: 'prof_resolved'.tr(), count: _resolvedCount.toString(), color: Colors.green.shade700),

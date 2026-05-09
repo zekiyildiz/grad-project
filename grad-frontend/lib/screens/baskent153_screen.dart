@@ -2,30 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart'; 
 import 'package:easy_localization/easy_localization.dart'; 
 
+/// A communication module that triggers the device's native hardware (Phone Dialer) and third-party apps (WhatsApp) 
+/// using the Deep Link (URI) method, and reduces the risk of crashes on SIM-less devices to zero through ‘canLaunchUrl’ checks.
 class Baskent153Screen extends StatelessWidget {
   const Baskent153Screen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // SAYFANIN KARANLIK MODDA OLUP OLMADIĞINI KONTROL EDİYORUZ
+    // We're checking whether the page is in dark mode
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      // backgroundColor: Colors.white, <-- BU SATIRI SİLDİK (Tema kendi rengini versin)
       appBar: AppBar(
         title: Text("baskent153_title".tr()),
-        centerTitle: true,
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
-          // ÜST KISIM: LOGO VE BİLGİ
+          // TOP SECTION: LOGO AND INFORMATION
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: BoxDecoration(
-              // Karanlık moddaysa hafif şeffaf turuncu, aydınlıksa açık turuncu
+              // Slightly translucent orange in dark mode, light orange in light mode
               color: isDark ? Colors.orange.withOpacity(0.1) : Colors.orange.shade50,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(30),
@@ -44,7 +44,7 @@ class Baskent153Screen extends StatelessWidget {
                 Text(
                   "baskent153_desc".tr(),
                   textAlign: TextAlign.center,
-                  // Yazı rengi karanlık/aydınlık moda göre değişiyor
+                  // The text color changes depending on whether the mode is dark or light
                   style: TextStyle(
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, 
                     fontSize: 16
@@ -56,12 +56,12 @@ class Baskent153Screen extends StatelessWidget {
 
           const SizedBox(height: 40),
 
-          // ORTA KISIM: BUTONLAR
+          // MIDDLE SECTION: BUTTONS
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: [
-                // 1. HEMEN ARA BUTONU
+                // 1. CALL NOW BUTTON
                 SizedBox(
                   width: double.infinity,
                   height: 60,
@@ -106,7 +106,7 @@ class Baskent153Screen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10), 
-               // 2. WHATSAPP HATTI
+               // 2. WhatsApp Line
                 SizedBox(
                   width: double.infinity,
                   height: 60,
@@ -150,7 +150,7 @@ class Baskent153Screen extends StatelessWidget {
               ],
             ),
           ),
-          // ALT KISIM: Footer
+          // BOTTOM SECTION: Footer
           Padding(
             padding: const EdgeInsets.only(bottom: 30),
             child: Text(

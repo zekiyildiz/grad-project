@@ -6,10 +6,9 @@ import 'package:http/http.dart' as http;
 
 /// Report Service for complaint/report management
 class ReportService {
-  // ApiClient ismini tutarlı olması için _apiClient olarak tanımlıyoruz
   final ApiClient _apiClient = ApiClient();
 
-  /// 1. Vatandaşın kendi şikayetlerini getirir
+  /// 1. The citizen submits their own complaints
   Future<List<dynamic>> getMyReports() async {
     try {
       final response = await _apiClient.get(
@@ -22,7 +21,7 @@ class ReportService {
     }
   }
 
-  /// 2. Admin/Belediye için sistemdeki TÜM şikayetleri getirir
+  /// 2. Retrieves ALL complaints in the system for Admin/Municipality
   Future<List<dynamic>> getAllReports() async {
     try {
       final response = await _apiClient.get(
@@ -35,7 +34,7 @@ class ReportService {
     }
   }
 
-  /// 3. Tek bir raporu ID ile detaylı getirir
+  /// 3. Retrieves a single report in detail by ID
   Future<Map<String, dynamic>> getReport(String id) async {
     return await _apiClient.get(
       '${ApiConfig.reportsUrl}/$id',
@@ -43,7 +42,7 @@ class ReportService {
     );
   }
 
-  /// 4. Yeni şikayet oluşturma (ACİL DURUM desteği eklendi)
+  /// 4. Creating a new complaint (EMERGENCY support added)
   Future<void> createReport({
     required String category,
     required String description,
@@ -54,7 +53,7 @@ class ReportService {
     required List<String> imageUrls,
   }) async {
     try {
-      await _apiClient.post( // veya http.post
+      await _apiClient.post( // or http.post
         ApiConfig.reportsUrl, 
         body: {
           'category': category,
@@ -62,7 +61,7 @@ class ReportService {
           'latitude': latitude,
           'longitude': longitude,
           'address': address,
-          'isUrgent': isUrgent, // Bu satır yoksa backend'e gitmez
+          'isUrgent': isUrgent,
           'imageUrls': imageUrls,
         },
         requireAuth: true,
@@ -71,7 +70,7 @@ class ReportService {
       throw Exception('Rapor oluşturulamadı: $e');
     }
   }
-  /// 5. Rapor durumunu güncelle (Örn: ÇÖZÜLDÜ / İNCELEMEDE)
+  /// 5. Update the report status (e.g., RESOLVED / UNDER REVIEW)
   Future<Map<String, dynamic>> updateReportStatus({
     required String id,
     required String status,
@@ -87,7 +86,7 @@ class ReportService {
     );
   }
 
-  /// 6. Şikayeti bir kuruma atar
+  /// 6. Submits the complaint to an agency
   Future<bool> assignInstitution(String reportId, String institutionCode) async {
     try {
       await _apiClient.put( 
@@ -133,15 +132,15 @@ class ReportService {
     }
     return null; 
   }
-// Şikayet Kategorisini Düzenleme (Admin/Saha Görevlisi)
+
+
   Future<void> updateReportCategory(String id, String newCategory) async {
     try {
-      final response = await _apiClient.put( // Eğer http paketini direkt kullanıyorsan http.put yap
+      final response = await _apiClient.put( // If you're using the http package directly, use http.put
         '${ApiConfig.reportsUrl}/$id/category', 
         body: { 'category': newCategory },
         requireAuth: true,
       );
-      
       
     } catch (e) {
       throw Exception("Kategori backend'e iletilemedi: $e");

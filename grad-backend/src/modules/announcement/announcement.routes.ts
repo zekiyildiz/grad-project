@@ -3,7 +3,7 @@ import { getAnnouncements } from './announcement.controller';
 
 const router = Router();
 
-// GET /api/v1/announcements şeklinde çağrılacak
+// It will be called as GET /api/v1/announcements
 router.get('/', getAnnouncements);
 
 export default router;

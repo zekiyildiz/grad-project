@@ -59,6 +59,9 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
     super.dispose();
   }
 
+  /// A defensive location function that retrieves location data from the device's GPS sensor, but if the sensor is turned off 
+  /// or the Geocoding API times out, it ensures the system remains operational by using raw coordinates (Lat/Lng) 
+  /// instead of causing the app to crash.
   Future<void> _getCurrentLocation() async {
     if (!mounted) return;
     setState(() => _gettingLocation = true);
@@ -84,10 +87,10 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
         return;
       }
 
-      // Önce son bilinen konumu al
+      // First, get the last known location
       Position? position = await Geolocator.getLastKnownPosition();
       
-      // Eğer son konum yoksa, düşük doğrulukla (hızlıca) yeni konum iste ve 5 saniye sınır koy
+      // If there is no last location, request a new location with low accuracy (quickly) and set a 5-second limit
       position ??= await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.low, 
         timeLimit: const Duration(seconds: 5),
@@ -99,7 +102,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
       });
 
       try {
-        // Adres dönüştürme (Geocoding) işlemine de 5 saniye sınır (Timeout) ekledik
+        // We've also added a 5-second timeout to the geocoding process
         List<Placemark> placemarks = await placemarkFromCoordinates(
           position.latitude,
           position.longitude,
@@ -116,7 +119,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
           });
         }
       } catch (e) {
-        // Adres bulamazsa veya zaman aşımına uğrarsa çökmek yerine koordinatı yazar
+        // If it cannot find the address or times out, it writes the coordinates instead of crashing
         if (mounted) {
           setState(() {
             _currentAddress = '${position!.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
@@ -220,7 +223,11 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
     return 'DIGER';
   }
 
-Future<void> _submitReport() async {
+  /// The main asynchronous function that uploads the photo to the server as form data and then
+  /// writes the complaint to the database. If a 401 (Unauthorized)
+  /// error is returned during the request, it automatically terminates the user's session and
+  /// safely redirects them to the login screen.
+  Future<void> _submitReport() async {
     setState(() {
       _formSubmitted = true;
     });
@@ -244,8 +251,7 @@ Future<void> _submitReport() async {
     setState(() => _isSending = true);
 
     try {
-      // FOTOĞRAFI ÖNCE SUNUCUYA YÜKLÜYORUZ 
-      // 1. RESMİ YÜKLE 
+      // FIRST, WE UPLOAD THE PHOTO TO THE SERVER 
       List<String> finalImages = [];
       try {
         String? uploadedUrl = await _reportService.uploadImage(_selectedImage!);
@@ -256,7 +262,7 @@ Future<void> _submitReport() async {
         debugPrint("Fotoğraf yükleme hatası: $e");
       }
 
-      // 2. ŞİKAYETİ KAYDET
+      // SUBMIT THE COMPLAINT
       await _reportService.createReport(
         category: _selectedCategory!,
         description: _descriptionController.text.isEmpty ? 'complaint_no_desc'.tr() : _descriptionController.text,
@@ -320,6 +326,9 @@ Future<void> _submitReport() async {
     }
   }
 
+  /// A function that performs object detection by feeding the image matrix captured by the camera (TFLite)
+  /// into the local (on-device) YOLOv8 Nano model. By mapping the detected label (e.g., ‘pothole’)
+  /// to the system category (‘PIT’) (Autonomous Classification), it minimizes the user's form-filling burden.
   Future<void> _pickAndAnalyzeImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
     try {

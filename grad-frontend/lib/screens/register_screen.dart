@@ -125,6 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  /// A function that validates user input at the UI layer and then delegates the registration logic to the AuthProvider.
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -155,7 +156,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    
+    // Checks whether the system is in dark mode.
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -165,7 +168,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             colors: [
               const Color(0xFF4094FF),
               const Color(0xFF4094FF).withOpacity(0.7),
-              Colors.white,
+              // In dark mode, the system uses the background color; in light mode, it uses white
+              isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
             ],
             stops: const [0.0, 0.2, 0.4],
           ),
@@ -208,6 +212,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   
                   Card(
                     elevation: 8,
+                    // The card color will be blackish or white depending on the theme
+                    color: isDark ? Colors.grey.shade900 : Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -221,6 +227,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             TextFormField(
                               controller: _nameController,
                               textCapitalization: TextCapitalization.words,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                               decoration: InputDecoration(
                                 labelText: 'reg_name_label'.tr(),
                                 hintText: 'reg_name_hint'.tr(),
@@ -229,7 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -247,6 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                               decoration: InputDecoration(
                                 labelText: 'reg_email_label'.tr(),
                                 hintText: 'reg_email_hint'.tr(),
@@ -255,7 +263,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -273,6 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(10),
@@ -287,7 +296,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
                               validator: (value) {
                                 if (value != null && value.isNotEmpty) {
@@ -307,6 +316,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             DropdownButtonFormField<String>(
                               value: _selectedDistrict,
+                              dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16),
                               decoration: InputDecoration(
                                 labelText: 'reg_district_label'.tr(),
                                 prefixIcon: const Icon(Icons.location_city_outlined),
@@ -314,9 +325,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
-                              hint: Text('reg_district_hint'.tr()),
+                              hint: Text('reg_district_hint'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
                               items: AnkaraLocationData.districts.map((district) {
                                 return DropdownMenuItem(
                                   value: district,
@@ -342,8 +353,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             
                             const SizedBox(height: 16),
                             
+                            // The list of neighborhoods is automatically updated based on the selected district data to ensure data integrity.
                             DropdownButtonFormField<String>(
                               value: _selectedNeighborhood,
+                              dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16),
                               decoration: InputDecoration(
                                 labelText: 'reg_neighborhood_label'.tr(),
                                 prefixIcon: const Icon(Icons.home_outlined),
@@ -351,11 +365,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
                               hint: Text(_selectedDistrict == null 
                                   ? 'reg_neighborhood_hint1'.tr() 
-                                  : 'reg_neighborhood_hint2'.tr()),
+                                  : 'reg_neighborhood_hint2'.tr(),
+                                  style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
                               items: _neighborhoods.map((neighborhood) {
                                 return DropdownMenuItem(
                                   value: neighborhood,
@@ -382,6 +397,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                               decoration: InputDecoration(
                                 labelText: 'reg_pass_label'.tr(),
                                 hintText: '••••••••',
@@ -402,7 +418,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -420,6 +436,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             TextFormField(
                               controller: _confirmPasswordController,
                               obscureText: _obscureConfirmPassword,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                               decoration: InputDecoration(
                                 labelText: 'reg_pass_confirm_label'.tr(),
                                 hintText: '••••••••',
@@ -440,7 +457,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -498,7 +515,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       Text(
                         'reg_have_account'.tr(),
-                        style: const TextStyle(color: Colors.grey),
+                        style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey),
                       ),
                       TextButton(
                         onPressed: () {
@@ -529,6 +546,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
+/// An architectural structure that abstracts the phone number masking logic from the main UI code and transforms it into a reusable class.
 class _TurkishPhoneNumberFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(

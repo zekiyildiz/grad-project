@@ -3,15 +3,15 @@ import { getFirestore } from '../../config/firebase';
 const COLLECTION = 'reports';
 
 const getAiSuggestion = (category: string) => {
-    // Olası Türkçe karakter sorunlarını ve boşlukları temizle
+    //Flutter can send “ÇUKUR” using a Turkish keyboard, but since the YOLO model was trained on English, it may send “CUKUR.” For normalization
     const cat = category?.toUpperCase()
         .replace(/İ/g, 'I').replace(/Ç/g, 'C').replace(/Ş/g, 'S')
         .replace(/Ğ/g, 'G').replace(/Ü/g, 'U').replace(/Ö/g, 'O').trim();
     
-    // 2. Kategoriye Göre Kurum Yönlendirmeleri
+    // Institutional Links by Category
     switch (cat) {
         case 'YANGIN': 
-            return 'EMNIYET';
+            return 'ITFAIYE';
             
         case 'GAZ KACAGI':
         case 'ELEKTRIK ARIZASI':
@@ -28,11 +28,10 @@ const getAiSuggestion = (category: string) => {
         case 'POSTER': 
             return 'ZABITA';
             
-        // Trafik şikayetleri doğrudan UKOME'ye
-        case 'TRAFIK': 
+        case 'TRAFIK': // Traffic complaints to UKOME
             return 'UKOME';
             
-        // Bank ve Ağaç şikayetleri doğrudan Park ve Bahçeler'e
+        // Complaints regarding benches and trees should be directed to the Parks and Gardens Department
         case 'KIRIK_BANK':
         case 'AGAC': 
             return 'PARK_BAHCE';
@@ -49,16 +48,15 @@ const getAiSuggestion = (category: string) => {
 export class ReportService {
 
     /**
-     * 1. YENİ RAPOR OLUŞTURMA (SİSTEM VE VATANDAŞ AYRIMI)
+     * 1. CREATING A NEW REPORT (DISTINCTION BETWEEN SYSTEM AND CITIZEN)
      */
     async createReport(data: any) {
         const db = getFirestore();
         
         const categoryUpper = (data.category || '').toUpperCase();
-        const urgentKeywords = ['YANGIN', 'GAZ', 'SU PATLAĞI', 'ELEKTRİK', 'YOL ÇÖKMESİ'];
         
-        // Eğer vatandaş "Acil" ekranından gönderdiyse (isUrgent true ise) kelimeye bakmaksızın acil kabul et!
-        const isUrgent = data.isUrgent === true || data.isUrgent === 'true' || urgentKeywords.some(keyword => categoryUpper.includes(keyword));
+        // If the citizen submitted it via the “Urgent” screen (if isUrgent is true), mark it as urgent regardless of the content
+        const isUrgent = data.isUrgent === true || data.isUrgent === 'true';
 
         const reportData = {
             ...data,
@@ -79,15 +77,14 @@ export class ReportService {
             const notifMessage = isUrgent 
                 ? `${categoryName} ihbarınız sistemimize acil koduyla kaydedildi.` 
                 : `${categoryName} konulu şikayetiniz sisteme kaydedildi.`;
-
+            //as soon as the process is complete, an instant notification is sent to the citizen by calling `this.createNotification` within the same function.
             await this.createNotification(data.userId, notifTitle, notifMessage);
         }
-
         return { id: docRef.id, ...reportData };
     }
 
     /**
-     * 2. KURUMA ATAMA
+     * 2. SUBMITTING A COMPLAINT TO AN ORGANIZATION
      */
     async assignInstitution(id: string, institutionCode: string) {
         const db = getFirestore();
@@ -114,7 +111,7 @@ export class ReportService {
     }
 
     /**
-     * 3. DURUM GÜNCELLEME (ÇÖZÜLDÜ)
+     * 3. STATUS UPDATE
      */
     async updateReportStatus(id: string, status: string, comment?: string) {
         const db = getFirestore();
@@ -142,7 +139,7 @@ export class ReportService {
     }
 
     /**
-     * 4. BİLDİRİMLERİ GETİR
+     * 4. GET NOTIFICATIONS
      */
     async getMyNotifications(userId: string) {
         const db = getFirestore();
@@ -167,7 +164,7 @@ export class ReportService {
     }
 
     /**
-     * 5. MERKEZİ BİLDİRİM OLUŞTURUCU
+     * 5. CENTRAL NOTIFICATION GENERATOR
      */
     private async createNotification(userId: string, title: string, message: string) {
         try {
@@ -176,10 +173,35 @@ export class ReportService {
                 userId, title, message, isRead: false, createdAt: new Date()
             });
         } catch (error) {
-            console.error(`❌ Bildirim yazılamadı:`, error);
+            console.error(`Bildirim yazılamadı:`, error);
         }
     }
 
+    /**
+     * 6. CATEGORY UPDATE (Service Layer)
+     */ 
+    async updateReportCategory(id: string, category: string) {
+        const db = getFirestore();
+        await db.collection(COLLECTION).doc(id).update({ 
+            category: category, 
+            updatedAt: new Date() 
+        });
+        return { success: true };
+    }
+
+    private _formatReport(doc: any) {
+        const data = doc.data(); // Convert Firestore's complex document to a regular object
+        return {
+            id: doc.id, // Embed the ID generated randomly by Firestore into the object as “id”.
+            ...data, // Copy all the data inside (photos, coordinates, etc.) exactly as it is
+            // Date Conversion
+            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+        };
+    }
+
+    // When a user taps on an unread notification displayed in bold on their phone, the app sends the notification's ID (id) to the backend. 
+    // The backend retrieves the record with that ID from the notifications table. It simply sets the isRead property (has it been read?) to true and records the current date and time (updatedAt).
     async markAsRead(id: string) {
         const db = getFirestore();
         await db.collection('notifications').doc(id).update({ isRead: true, updatedAt: new Date() });
@@ -218,23 +240,5 @@ export class ReportService {
         const doc = await db.collection(COLLECTION).doc(id).get();
         return doc.exists ? this._formatReport(doc) : null;
     }
-
-    async updateReportCategory(id: string, category: string) {
-        const db = getFirestore();
-        await db.collection(COLLECTION).doc(id).update({ 
-            category: category, 
-            updatedAt: new Date() 
-        });
-        return { success: true };
-    }
-
-    private _formatReport(doc: any) {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
-            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : data.updatedAt,
-        };
-    }
+    
 }

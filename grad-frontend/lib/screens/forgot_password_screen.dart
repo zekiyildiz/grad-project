@@ -15,6 +15,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
   bool _emailSent = false;
 
+  /// A mandatory cleanup method used to prevent form controls from remaining in the device's memory
+  /// and causing a memory leak when the page is closed.
   @override
   void dispose() {
     _emailController.dispose();
@@ -101,8 +103,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             colors: [
               const Color(0xFF4094FF),
               const Color(0xFF4094FF).withOpacity(0.7),
-              // Karanlık modda gradyanın sonunu temaya uyumlu yapıyoruz
-              Theme.of(context).scaffoldBackgroundColor, // DÜZELTİLDİ
+              // In dark mode, we make the end of the gradient match the theme
+              Theme.of(context).scaffoldBackgroundColor,
             ],
             stops: const [0.0, 0.2, 0.5],
           ),
@@ -120,7 +122,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildSuccessContent() {
-    // Okunması için karanlık mod kontrolü
+    // Check for dark mode before rendering
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
@@ -128,7 +130,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      // Kart arka planını temaya uyumlu hale getir
+      // Make the card background match the theme
       color: isDark ? Colors.grey.shade900 : Colors.white, 
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -209,7 +211,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildFormContent(AuthProvider authProvider) {
-    // Okunması için karanlık mod kontrolü
+    // Check for dark mode before rendering
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
@@ -269,7 +271,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          // Kart arka planını temaya uyumlu hale getir
+          // Make the card background match the theme
           color: isDark ? Colors.grey.shade900 : Colors.white, 
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -290,7 +292,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      // Textfield içi karanlık/aydınlık mod ayarı
+                      // Dark/light mode setting for the text field
                       fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50], 
                     ),
                     validator: (value) {

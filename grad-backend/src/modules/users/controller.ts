@@ -64,13 +64,17 @@ class UserController {
      */
     async getProfile(req: Request, res: Response, next: NextFunction) {
         try {
+            // Retrieve the authenticated user from the incoming request
             const user = (req as any).user;
+            //If there is no user or the token is invalid, return a 401 (Unauthorized) error.
             if (!user || !user.uid) {
                 res.status(401).json({ success: false, message: 'Unauthorized' });
                 return;
             }
-
+            // If everything is in order, send the user's ID (uid) to the Service layer and retrieve the data.
             const result = await userService.getProfile(user.uid);
+
+            // Send the successful data back to Flutter as JSON.
             res.json({ success: true, data: result });
         } catch (error: any) {
             if (error.message === 'User not found') {
@@ -112,6 +116,7 @@ class UserController {
      *       401:
      *         description: Unauthorized
      */
+
     async updateProfile(req: Request, res: Response, next: NextFunction) {
         try {
             const user = (req as any).user;
@@ -120,10 +125,14 @@ class UserController {
                 return;
             }
 
+            // We pass the raw data from Flutter (req.body) through the validators in dto.ts (updateProfileSchema).
+            // If it doesn't pass validation, the code won't proceed past this point and will jump to the catch block
             const data = updateProfileSchema.parse(req.body);
             const result = await userService.updateProfile(user.uid, data);
+            // We send the validated, clean data to the Service layer for processing in the database.
             res.json({ success: true, data: result, message: 'Profile updated successfully' });
         } catch (error: any) {
+            // ZodError: If there is an error in the DTO, return a 400 (Bad Request) response.
             if (error.name === 'ZodError') {
                 res.status(400).json({ success: false, message: 'Validation error', errors: error.errors });
                 return;
@@ -135,7 +144,6 @@ class UserController {
             next(error);
         }
     }
-    
 }
 
 export const userController = new UserController();

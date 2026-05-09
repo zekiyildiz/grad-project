@@ -22,7 +22,7 @@ class Announcement {
       titleEn: json['title_en'] ?? '',
       contentTr: json['content_tr'] ?? '',
       contentEn: json['content_en'] ?? '',
-      // Tarih formatını Firebase'den gelen saniye cinsinden DateTime'a çeviriyoruz
+      // We're converting the date format from seconds (as provided by Firebase) to a DateTime object
       date: json['date'] != null 
           ? DateTime.fromMillisecondsSinceEpoch(json['date']['_seconds'] * 1000)
           : DateTime.now(),

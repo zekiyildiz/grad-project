@@ -4,7 +4,7 @@ import admin from 'firebase-admin';
 export const getAnnouncements = async (req: Request, res: Response) => {
     try {
         const db = admin.firestore();
-        // Firebase'deki koleksiyon adınla aynı olmalı
+        // It must be the same as your collection name in Firebase
         const snapshot = await db.collection('announcements').orderBy('date', 'desc').get();
         
         const announcements = snapshot.docs.map(doc => ({

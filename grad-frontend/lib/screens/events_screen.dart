@@ -23,10 +23,11 @@ class EventsScreen extends StatefulWidget {
 class _EventsScreenState extends State<EventsScreen> {
   String? selectedCategory;
 
-  //KAYDEDİLEN ETKİNLİKLERİ TUTAN LİSTE 
+  //List of Saved Events 
+  // It maintains the user's current state by storing the events they are interested in in device memory, enabling reactive state updates across screens.
   final List<EventItem> _savedEvents = [];
 
-  //ALT PANEL TASARIMI 
+  //BOTTOM PANEL DESIGN 
   void _showEventDetail(BuildContext context, EventItem event, bool isDark) {
     bool isAlreadySaved = _savedEvents.contains(event);
 
@@ -66,14 +67,16 @@ class _EventsScreenState extends State<EventsScreen> {
                 
                 const SizedBox(height: 35),
                 
-                //DİNAMİK TAKVİM SİMÜLASYONU BUTONU
+                //Dynamic Calendar Simulation Button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
+                  // To enhance the user experience (UX), an asynchronous (Future.delayed) wait time and 
+                  // a calendar picker interface have been simulated to mimic access to the device's native calendar API.
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       if (isAlreadySaved) {
-                        // Eğer zaten eklendiyse direkt çıkar
+                        // If it's already there, remove it immediately
                         setSheetState(() {
                           _savedEvents.remove(event);
                           isAlreadySaved = false;
@@ -83,7 +86,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           SnackBar(content: Text('event_removed'.tr()), backgroundColor: Colors.orange),
                         );
                       } else {
-                        // TAKVİM ARAYÜZÜNÜ AÇMA
+                        // OPEN THE CALENDAR INTERFACE
                         DateTime? parsedDate;
                         try {
                           parsedDate = DateFormat('dd.MM.yyyy').parse(event.date);
@@ -100,24 +103,33 @@ class _EventsScreenState extends State<EventsScreen> {
                           confirmText: 'event_add_calendar'.tr(), 
                           cancelText: 'cancel'.tr(),
                           builder: (context, child) {
-                            // Karanlık mod ve tema uyumu için
                             return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: ColorScheme.light(
-                                  primary: Colors.blue, 
-                                  onPrimary: Colors.white, 
-                                  onSurface: isDark ? Colors.white : Colors.black87, 
-                                ),
-                                dialogBackgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
-                              ),
+                              data: isDark 
+                                ? ThemeData.dark().copyWith(
+                                    colorScheme: const ColorScheme.dark(
+                                      primary: Colors.blue, // Selected day circle
+                                      onPrimary: Colors.white, // Text color for the selected day
+                                      surface: Color(0xFF1E1E1E), // Calendar background
+                                      onSurface: Colors.white, // General calendar text color
+                                    ),
+                                    dialogBackgroundColor: Colors.grey.shade900,
+                                  )
+                                : ThemeData.light().copyWith(
+                                    colorScheme: const ColorScheme.light(
+                                      primary: Colors.blue,
+                                      onPrimary: Colors.white,
+                                      onSurface: Colors.black87,
+                                    ),
+                                    dialogBackgroundColor: Colors.white,
+                                  ),
                               child: child!,
                             );
                           },
                         );
 
-                        //KULLANICI ONAYLARSA SİMÜLASYONU BAŞLAT
+                        //START THE SIMULATION IF THE USER AGREES
                         if (picked != null) {
-                          // Yükleniyor animasyonu aç (Sanki cihazın takvimine yazıyormuş gibi)
+                          // Enable the loading animation (as if it were being added to the device's calendar)
                           if (!context.mounted) return;
                           showDialog(
                             context: context,
@@ -128,9 +140,9 @@ class _EventsScreenState extends State<EventsScreen> {
                           await Future.delayed(const Duration(milliseconds: 800)); 
                           
                           if (!context.mounted) return;
-                          Navigator.pop(context); // Animasyonu kapat
+                          Navigator.pop(context); 
 
-                          // Listeye ekle ve UI'ı güncelle
+                          // Add to the list and update the UI
                           setSheetState(() {
                             _savedEvents.add(event);
                             isAlreadySaved = true;
@@ -162,7 +174,7 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  //KAYDEDİLEN ETKİNLİKLERİ GÖSTEREN EKRAN
+  //Screen Displaying Saved Events
   void _showSavedEvents(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -206,7 +218,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                   icon: const Icon(Icons.delete_outline, color: Colors.red),
                                   onPressed: () {
                                     setSheetState(() => _savedEvents.remove(event));
-                                    setState(() {}); // Arkadaki badge de güncellensin
+                                    setState(() {}); 
                                   },
                                 ),
                               ),

@@ -10,7 +10,7 @@ enum AuthState { initial, loading, authenticated, unauthenticated, error }
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
 
-  // Başlangıç durumu 'initial' olmalı (Direkt authenticated yapmıyoruz)
+  // The initial state should be ‘initial’ (we are not using direct authentication)
   AuthState _state = AuthState.initial;
   UserModel? _user;
   String? _errorMessage;
@@ -28,51 +28,51 @@ class AuthProvider extends ChangeNotifier {
   bool get isEmployee => _user?.roleId == 2;
 
   /// Initialize auth state - check if user is already logged in
-  /// GÜNCELLENMİŞ VERSİYON: Bozuk token kontrolü yapar
+  /// Checks for invalid tokens
   Future<void> init() async {
     _state = AuthState.loading;
     notifyListeners();
 
     try {
-      // 1. Hafızada token var mı?
+      // Is there a token in memory?
       final isLoggedIn = await _authService.isLoggedIn();
 
       if (isLoggedIn) {
-        // 2. Token varsa sunucudan kullanıcı bilgisini çekmeye çalış
+        // If a token exists, attempt to retrieve the user's information from the server
         final userData = await _authService.getCurrentUser();
 
-        // Eğer sunucudan boş veri gelirse veya veri bozuksa HATA FIRLAT
-        // Bu sayede "Giriş yapılmış gibi" davranıp boş sayfa açmaz.
+        // If empty data is received from the server or the data is corrupted, throw an error
+        // This prevents the page from behaving as if a login has been made and opening a blank page
         if (userData == null ||
             (userData['user'] == null && userData['email'] == null)) {
           throw Exception("Kullanıcı verisi eksik/bozuk");
         }
 
-        // Veriyi modele çevir
+        // Convert the data into a model
         _user = UserModel.fromJson(userData['user'] ?? userData);
 
-        // Ekstra Koruma: Email boşsa yine kabul etme
+        // Do not accept if the email is empty
         if (_user?.email == null || _user!.email!.isEmpty) {
           throw Exception("Kullanıcı profili hatalı");
         }
 
-        // Her şey yolundaysa giriş yapılmış say
+        // If everything is okay, consider the login successful
         _state = AuthState.authenticated;
       } else {
-        // Token yoksa giriş yapılmamış say
+        // If there is no token, the user is considered not logged in
         _state = AuthState.unauthenticated;
       }
     } catch (e) {
-      // HATA DURUMU: Token eski, sunucu kapalı veya veri bozuk
+      // ERROR: Token has expired, server is down, or data is corrupted
       print("⚠️ Auth Init Hatası (Bozuk Token Temizleniyor): $e");
 
-      // Bozuk token'ı temizle ki sonsuz döngüye girmesin
+      // Clear the invalid token so it doesn't get stuck in an infinite loop
       await _authService.logout();
       _user = null;
 
-      // Kullanıcıyı Login ekranına yönlendir
+      // Redirect the user to the login screen
       _state = AuthState.unauthenticated;
-      _errorMessage = null; // Başlangıçta hata mesajı gösterme
+      _errorMessage = null; // Do not display an error message at startup
     }
 
     notifyListeners();
@@ -168,8 +168,8 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await _authService.forgotPassword(email: email);
-      // Şifre sıfırlama sonrası login ekranına atabiliriz veya mesaj gösterebiliriz
-      // Burada state'i değiştirmeden sadece success dönüyoruz
+      // After resetting the password, we can redirect to the login screen or display a message
+      // Here, we simply return “success” without changing the state
       _state = AuthState.unauthenticated;
       notifyListeners();
       return true;

@@ -655,6 +655,7 @@
   "inst_police_fire": "İl Emniyet / İtfaiye",
   "inst_manual_label": "Kurum Adı Giriniz",
   "inst_other_manual": "Diğer (Manuel)",
+  "inst_fire": "İtfaiye Daire Başkanlığı",
 
   "inst_ukome": "UKOME (Ulaşım Koordinasyon)", 
   "inst_park_bahce": "Park ve Bahçeler Müd.",
@@ -680,6 +681,16 @@
   "manual_loc_btn": "KONUMU ONAYLA VE GÖNDER",
   "manual_loc_error": "Lütfen haritadan bir konum seçin.",
 
-  "emerg_dialog_error_empty": "Lütfen durumu açıklayın"
+  "emerg_dialog_error_empty": "Lütfen durumu açıklayın",
+
+  "admin_detail_desc": "Açıklama",
+  "admin_detail_no_desc": "Açıklama girilmemiş.",
+  "admin_detail_location": "Tam Konum",
+  "admin_detail_photo": "Eklenen Fotoğraf",
+  "admin_detail_no_photo": "Vatandaş fotoğraf eklememiş.",
+  "admin_detail_inst": "Görevli Kurum",
+  "admin_loc_unknown": "BİLİNMEYEN",
+  "admin_loc_map": "HARİTADAN SEÇİLEN",
+  "admin_loc_other": "DİĞER BÖLGELER"
 
 }

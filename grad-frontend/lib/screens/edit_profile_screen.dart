@@ -7,7 +7,8 @@ import 'package:geocoding/geocoding.dart';
 import '../providers/user_provider.dart';
 import 'location_picker_screen.dart'; 
 
-// Boşluk ve Büyük/Küçük Harf Korumalı
+/// A defensive session cache manager that stores user profile data statically in device memory (RAM),
+/// thereby preventing unnecessary API calls and UI flickering during page transitions.
 class ProfileSessionCache {
   static String? userEmail;
   static String? name;
@@ -23,7 +24,7 @@ class ProfileSessionCache {
 
   static void checkUser(String currentEmail) {
     String safeEmail = currentEmail.trim().toLowerCase();
-    if (safeEmail.isEmpty) return; // Yüklenme anında silinmesini engeller
+    if (safeEmail.isEmpty) return; // Prevents it from being deleted upon loading
     
     if (userEmail == null) {
       userEmail = safeEmail;
@@ -68,7 +69,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _selectedCountryCode = '+90';
   
   final Map<String, int> _phoneLengths = {
-    '+90': 10, '+1': 10, '+44': 10, '+49': 11, '+33': 9,  
+    '+90': 10 // To avoid any issues on the backend, only +90 for now
   };
 
   bool _isLoading = false;
@@ -77,6 +78,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
 
+    // An algorithm that parses phone numbers of unknown format retrieved from the database;
+    // identifies the country code, removes leading zeros, and standardizes the data to meet UI formatting requirements.
     String rawPhone = widget.initialPhone.trim();
     String parsedNumber = rawPhone;
 
@@ -139,6 +142,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  /// A module that converts raw GPS coordinates from a map into meaningful street addresses. It includes a 5-second timeout protection 
+  /// against network delays; if the service does not respond, it uses the raw coordinates as a fallback instead of locking up the system.
   Future<void> _pickLocationFromMap() async {
     final startPos = const LatLng(39.9334, 32.8597); 
     
@@ -192,7 +197,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         address: _addressController.text.trim()
       );
 
-      // Hafızayı en güvenli şekilde güncelle
+      // Update the memory in the safest way possible
       ProfileSessionCache.update(
         _emailController.text, 
         _nameController.text, 
@@ -217,7 +222,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     int maxDigits = _phoneLengths[_selectedCountryCode] ?? 10; 
 
     return Scaffold(
-      appBar: AppBar(title: Text('edit_prof_title'.tr()), backgroundColor: const Color(0xFF4094FF), foregroundColor: Colors.white),
+      appBar: AppBar(title: Text('edit_prof_title'.tr(),style: const TextStyle(
+      fontWeight: FontWeight.bold,),), backgroundColor: const Color(0xFF4094FF), foregroundColor: Colors.white),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Form(

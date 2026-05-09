@@ -73,6 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
+    // After a successful login, the redirection engine checks the user's role ID (roleId) in the database and uses an if-else tree 
+    //to automatically and securely redirect the user to their respective dashboard (Admin, Staff, Citizen) using PushReplacement.
     if (success) {
       final roleId = authProvider.userRoleId;
       Widget targetScreen;
@@ -100,7 +102,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final displayError = authProvider.errorMessage ?? _errorMessage;
-    // KARANLIK MOD KONTROLÜ
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
@@ -112,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
             colors: [
               const Color(0xFF4094FF),
               const Color(0xFF4094FF).withOpacity(0.7),
-              // Alt kısım karanlık modda siyahımsı, aydınlıkta beyaz olur
+              // The bottom section is blackish in dark mode and white in light mode
               isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.white, 
             ],
             stops: const [0.0, 0.3, 0.5],
@@ -145,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   Card(
                     elevation: 8,
-                    // KART ARKA PLANI DİNAMİK YAPILDI
+                    // The card background has been made dynamic
                     color: isDark ? Colors.grey.shade900 : Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
@@ -185,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              // YAZI RENGİ DİNAMİK YAPILDI
+                              // TEXT COLOR IS NOW DYNAMIC
                               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                               decoration: InputDecoration(
                                 labelText: 'login_email_label'.tr(),
@@ -193,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 prefixIcon: const Icon(Icons.email_outlined),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                 filled: true,
-                                // TEXTFIELD İÇ RENGİ DİNAMİK YAPILDI
+                                // The text field's background color is now dynamic
                                 fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
                               validator: (value) {
@@ -206,7 +207,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
-                              // YAZI RENGİ DİNAMİK YAPILDI
                               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                               decoration: InputDecoration(
                                 labelText: 'login_password_label'.tr(),
@@ -218,7 +218,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                 filled: true,
-                                // TEXTFIELD İÇ RENGİ DİNAMİK YAPILDI
                                 fillColor: isDark ? Colors.grey.shade800 : Colors.grey[50],
                               ),
                               validator: (value) {
@@ -264,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         'login_no_account'.tr(),
-                        // ALT YAZILAR KARANLIK MODDA DAHA PARLAK GRİ YAPILDI
+                        // Subtitles have been set to a lighter shade of gray in dark mode
                         style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey),
                       ),
                       TextButton(
@@ -282,7 +281,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     child: Text(
                       'login_continue_guest'.tr(),
-                      // ALT YAZILAR KARANLIK MODDA DAHA PARLAK GRİ YAPILDI
                       style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey),
                     ),
                   ),

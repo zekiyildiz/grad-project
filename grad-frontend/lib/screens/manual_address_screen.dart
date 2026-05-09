@@ -8,7 +8,7 @@ import '../services/report_service.dart';
 
 class ManualAddressScreen extends StatefulWidget {
   final String emergencyType; 
-  final String description; // Önceki sayfadan gelen açıklamayı tutacak
+  final String description; // Will retain the description from the previous page
 
   const ManualAddressScreen({Key? key, required this.emergencyType, required this.description}) : super(key: key);
   @override
@@ -32,6 +32,9 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
     super.dispose();
   }
 
+  /// Converts touch coordinates on the map to a human-readable text address.
+  /// A 5-second timeout has been implemented to guard against API delays,
+  /// if no response is received, the coordinate text is returned as a fallback.
   Future<void> _onMapTap(TapPosition tapPosition, LatLng point) async {
     setState(() {
       _selectedPoint = point;
@@ -51,7 +54,7 @@ class _ManualAddressScreenState extends State<ManualAddressScreen> {
 
         if (mounted) {
           setState(() {
-            _fetchedAddress = newAddress.isEmpty ? "manual_loc_not_found".tr() : newAddress; // Çeviri eklendi
+            _fetchedAddress = newAddress.isEmpty ? "manual_loc_not_found".tr() : newAddress; 
           });
         }
       }
@@ -110,7 +113,7 @@ Future<void> _submitAddress() async {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('manual_loc_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), 
+        title: Text('manual_loc_title'.tr(), style: const TextStyle(color: Colors.white)), 
         backgroundColor: Colors.red.shade700,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -127,7 +130,7 @@ Future<void> _submitAddress() async {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.akillibelediye.app',
+                  userAgentPackageName: 'com.team29.akillibelediye',
                 ),
                 MarkerLayer(
                   markers: [
@@ -162,7 +165,8 @@ Future<void> _submitAddress() async {
                   ),
                   const SizedBox(height: 8),
                   
-                  // KİLİTLİ ADRES KUTUSU
+                  // LOCKED ADDRESS BAR
+                  // A read-only UI component has been used to prevent the user from accidentally deleting or corrupting the main address data derived from GPS.
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
@@ -203,7 +207,9 @@ Future<void> _submitAddress() async {
                   ),
                   const SizedBox(height: 8),
 
-                  // DÜZENLENEBİLİR AÇIKLAMA KUTUSU
+                  // EDITABLE DESCRIPTION BOX
+                  // An additional data field that prevents the main address from being altered, giving the user the freedom to enter only 
+                  // specific details such as ‘Building Number, Floor, Apartment’.
                   TextField(
                     controller: _detailsController,
                     maxLines: 2,

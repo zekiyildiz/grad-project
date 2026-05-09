@@ -75,7 +75,7 @@ class ApiClient {
       return body;
     }
 
-    // Türkçe hata mesajlarını belirle
+    // Identify Turkish error messages
     String errorMessage = _getLocalizedErrorMessage(response.statusCode, body);
 
     throw ApiException(
@@ -87,18 +87,18 @@ class ApiClient {
 
   /// Get localized error message based on status code and response body
   String _getLocalizedErrorMessage(int statusCode, dynamic body) {
-    // Önce API'den gelen Türkçe mesajı kontrol et
+    // First, check the Turkish message received from the API
     String? apiMessage;
     if (body != null && body is Map) {
       apiMessage = body['message'] ?? body['error'];
     }
 
-    // Backend'den Türkçe mesaj geldiyse doğrudan kullan
+    // If a message in Turkish comes from the backend, use it directly
     if (apiMessage != null && apiMessage.isNotEmpty && !apiMessage.contains('Error')) {
       return apiMessage;
     }
 
-    // Fallback: Status koduna göre Türkçe hata mesajları
+    // Fallback: Turkish error messages based on the status code
     switch (statusCode) {
       case 400:
         return apiMessage ?? 'Geçersiz istek. Lütfen bilgilerinizi kontrol edin.';

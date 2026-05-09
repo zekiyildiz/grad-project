@@ -45,6 +45,7 @@ class HelpScreen extends StatelessWidget {
               ),
             ),
             
+            // Instead of hard-coding frequently asked questions into the interface, we mapped them through a data model to prevent code duplication and ensure scalability.
             ...faqList.map((faq) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),

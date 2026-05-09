@@ -20,7 +20,7 @@ export class UserService {
             // Get user statistics from reports collection
             const reportsSnapshot = await getFirestore()
                 .collection('reports')
-                .where('userId', '==', uid)
+                .where('userId', '==', uid) // Retrieve only the records belonging to this citizen
                 .get();
 
             const totalReports = reportsSnapshot.size;
@@ -36,6 +36,7 @@ export class UserService {
 
             const surveyCount = surveysSnapshot.size;
 
+            // Combine all this data into a single JSON object and send it back to the controller
             return {
                 user: userData,
                 statistics: {
@@ -72,6 +73,7 @@ export class UserService {
             if (data.displayName) updateData.displayName = data.displayName;
             if (data.photoURL) updateData.photoURL = data.photoURL;
 
+            // Update this specific package we created in the database
             await userRef.update(updateData);
 
             // Get updated user data
@@ -81,8 +83,6 @@ export class UserService {
             throw error;
         }
     }
-    
 }
-
 
 export const userService = new UserService();

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class WeatherService {
-  // NOT: Kendi API Key'ini buraya yapıştır.
+  // NOTE: Paste your API key here.
   final String apiKey = "f648ef858a9cb7cee87f1271582bc49a"; 
   final String city = "Ankara";
 
@@ -15,7 +15,7 @@ class WeatherService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        // Hata durumunda boş bir map dönüyoruz
+        // In case of an error, we return an empty map
         return {}; 
       }
     } catch (e) {

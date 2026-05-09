@@ -55,10 +55,14 @@ class AuthController {
      */
     async register(req: Request, res: Response, next: NextFunction) {
         try {
+            // Does the data from Flutter comply with our rules?
             const data = registerSchema.parse(req.body);
+            // If the data is valid, forward the user to the Service layer for creation.
             const result = await authService.register(data);
+            // Return the token and user information to the user with a 200 OK response
             res.json({ success: true, data: result });
         } catch (error: any) {
+            // If Zod validation fails, return a 400 (Bad Request) status code and specify the reason.
             if (error.name === 'ZodError') {
                 res.status(400).json({ success: false, message: 'Validation error', errors: error.errors });
                 return;

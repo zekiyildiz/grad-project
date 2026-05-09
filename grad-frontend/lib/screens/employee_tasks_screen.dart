@@ -6,6 +6,7 @@ import '../services/report_service.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
 import 'login_screen.dart';
+import '../utils/admin_helpers.dart';
 
 class EmployeeTasksScreen extends StatefulWidget {
   final int initialIndex;
@@ -44,6 +45,8 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
     setState(() { _combinedTasksFuture = _getAllReports(); });
   }
 
+  /// A data parsing module that converts complex complaint data received from the backend into a standard format 
+  /// (normalizes it) to display it accurately in the UI layer.
   Future<List<Map<String, dynamic>>> _getAllReports() async {
     List<Map<String, dynamic>> combinedList = [];
     try {
@@ -65,7 +68,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
         combinedList.add({
           'id': report['id']?.toString() ?? '',
           'categoryRaw': report['category']?.toString() ?? 'DIGER',
-          'titleStr': _getCategoryTitle(report['category']?.toString() ?? 'DIGER'),
+          // 'titleStr': AdminHelpers.getCategoryTitle(report['category']?.toString() ?? 'DIGER'),
           'locStr': report['location']?['address']?.toString() ?? report['address']?.toString() ?? 'loc_unknown'.tr(),
           'description': report['description']?.toString() ?? '',
           'imageUrl': imageUrl,
@@ -80,47 +83,9 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
     return combinedList;
   }
 
-  String _getInstitutionName(String? code) {
-  if (code == null || code.isEmpty || code == 'ATANMADI' || code == 'PENDING' || code == 'STATUS_PENDING') return 'inst_unassigned'.tr();
-  
-  String cleanCode = code.toUpperCase().replaceAll('INST_', '');
-  
-  switch (cleanCode) {
-    case 'FEN_ISLERI': return 'inst_fen'.tr();
-    case 'TEDAS': return 'inst_tedas'.tr(); 
-    case 'ASKI': return 'inst_aski'.tr(); 
-    case 'ZABITA': return 'inst_zabita'.tr();
-    case 'TEMIZLIK': return 'inst_temizlik'.tr();
-    case 'EMNIYET': return 'inst_police_fire'.tr();
-    case 'UKOME': return 'inst_ukome'.tr(); 
-    case 'PARK_BAHCE': return 'inst_park_bahce'.tr(); 
-    case 'DIGER': return 'inst_other_manual'.tr(); 
-    default: return code; 
-  }
-}
-
-  String _predictInstitution(String category) {
-    String cat = category.toUpperCase().replaceAll('İ', 'I').replaceAll('Ç', 'C').replaceAll('Ş', 'S').replaceAll('Ğ', 'G').replaceAll('Ü', 'U').replaceAll('Ö', 'O');
-    
-    if (cat.contains('YANGIN')) return 'EMNIYET';
-    if (cat.contains('GAZ') || cat.contains('ELEKTRIK')) return 'TEDAS';
-    if (cat.contains('SU')) return 'ASKI';
-    if (cat.contains('COP') || cat.contains('TEMIZLIK')) return 'TEMIZLIK';
-    
-    // Trafik artık UKOME'ye gidecek
-    if (cat.contains('TRAFIK')) return 'UKOME';
-    
-    // Ağaç ve Bank artık Park Bahçeler'e gidecek
-    if (cat.contains('AGAC') || cat.contains('BANK')) return 'PARK_BAHCE';
-    
-    // Scooter ve Afiş/Poster Zabıta'da kalacak
-    if (cat.contains('SCOOTER') || cat.contains('POSTER') || cat.contains('AFIS')) return 'ZABITA';
-    
-    return 'FEN_ISLERI';
-  }
 
   void _showAssignmentDialog(BuildContext context, Map<String, dynamic> task) {
-    String currentSelection = _predictInstitution(task['categoryRaw'].toString());
+    String currentSelection = AdminHelpers.predictInstitution(task['categoryRaw'].toString());
     final TextEditingController _customController = TextEditingController();
     bool _isOther = false;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -138,19 +103,20 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _isOther ? 'DIGER' : (['FEN_ISLERI', 'TEDAS', 'ASKI', 'ZABITA', 'TEMIZLIK', 'EMNIYET', 'UKOME', 'PARK_BAHCE'].contains(currentSelection) ? currentSelection : 'FEN_ISLERI'),
                     dropdownColor: isDark ? Colors.grey.shade800 : Colors.white,
                     decoration: const InputDecoration(border: OutlineInputBorder()),
                     items: [
-                      DropdownMenuItem(value: 'FEN_ISLERI', child: Text('inst_fen'.tr())),
-                      DropdownMenuItem(value: 'TEDAS', child: Text('inst_tedas'.tr())), 
-                      DropdownMenuItem(value: 'ASKI', child: Text('inst_aski'.tr())),  
-                      DropdownMenuItem(value: 'ZABITA', child: Text('inst_zabita'.tr())),
-                      DropdownMenuItem(value: 'TEMIZLIK', child: Text('inst_temizlik'.tr())),
-                      DropdownMenuItem(value: 'EMNIYET', child: Text('inst_police_fire'.tr())),
-                      DropdownMenuItem(value: 'UKOME', child: Text('inst_ukome'.tr())), 
-                      DropdownMenuItem(value: 'PARK_BAHCE', child: Text('inst_park_bahce'.tr())), 
-                      DropdownMenuItem(value: 'DIGER', child: Text('inst_other_manual'.tr())),
+                      DropdownMenuItem(value: 'FEN_ISLERI', child: Text('inst_fen'.tr(),overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'TEDAS', child: Text('inst_tedas'.tr(),overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'ASKI', child: Text('inst_aski'.tr(),overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'ZABITA', child: Text('inst_zabita'.tr(),overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'TEMIZLIK', child: Text('inst_temizlik'.tr(),overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'EMNIYET', child: Text('inst_police_fire'.tr(),overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'UKOME', child: Text('inst_ukome'.tr(),overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'PARK_BAHCE', child: Text('inst_park_bahce'.tr(),overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'DIGER', child: Text('inst_other_manual'.tr(),overflow: TextOverflow.ellipsis)),
                     ],
                     onChanged: (val) {
                       setDialogState(() {
@@ -286,6 +252,8 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                   color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
+                                /// A reactive dropdown component that allows field staff (Employees) to dynamically update 
+                                /// the category of a misclassified complaint within a modal without leaving the page.
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
                                     isExpanded: true,
@@ -298,7 +266,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                         child: Padding(
                                           padding: const EdgeInsets.only(left: 8.0),
                                           child: Text(
-                                            _getCategoryTitle(category),
+                                            AdminHelpers.getCategoryTitle(category),
                                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
                                           ),
                                         ),
@@ -314,8 +282,14 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                 ),
                               )
                             else 
-                              Text(item['titleStr'] ?? _getCategoryTitle(rawCat), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: showAsRed ? Colors.red : (isDark ? Colors.white : Colors.black87))),
-                            
+                            Text(
+                              AdminHelpers.getCategoryTitle(rawCat), 
+                              style: TextStyle(
+                                fontSize: 22, 
+                                fontWeight: FontWeight.bold, 
+                                color: showAsRed ? Colors.red : (isDark ? Colors.white : Colors.black87)
+                              )
+                            ),
                             const SizedBox(height: 4),
                             Text(item['timeStr'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
                           ],
@@ -385,7 +359,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                         children: [
                           const Icon(Icons.business, color: Colors.blue),
                           const SizedBox(width: 10),
-                          Text(_getInstitutionName(assignedTo), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(AdminHelpers.getInstitutionName(assignedTo), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
                     ),
@@ -435,27 +409,6 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
     );
   }
 
-  String _getCategoryTitle(String category) {
-    String key = category.trim().toUpperCase().replaceAll('İ', 'I').replaceAll('Ğ', 'G').replaceAll('Ç', 'C').replaceAll('Ş', 'S').replaceAll('Ö', 'O').replaceAll('Ü', 'U');
-    switch (key) {
-      case 'YANGIN': return 'cat_fire'.tr();
-      case 'GAZ KACAGI': return 'cat_gas'.tr(); 
-      case 'SU PATLAGI': return 'cat_water'.tr(); 
-      case 'ELEKTRIK ARIZASI': return 'cat_electric_urgent'.tr(); 
-      case 'YOL COKMESI': return 'cat_road_collapse'.tr(); 
-      case 'CUKUR': return 'cat_pothole'.tr();
-      case 'COPLUK': return 'cat_garbage'.tr();
-      case 'KIRIK_BANK': return 'cat_bench'.tr();
-      case 'TRAFIK': return 'cat_traffic'.tr();
-      case 'ELEKTRIK': return 'cat_electric'.tr();
-      case 'SCOOTER': return 'cat_scooter'.tr();
-      case 'POSTER': return 'cat_poster'.tr();
-      case 'AGAC': return 'cat_tree'.tr();
-      case 'DIGER': return 'cat_other'.tr(); 
-      default: return category;
-    }
-  }
-
   String _formatDate(dynamic dateData) {
     if (dateData == null) return '';
     try {
@@ -486,6 +439,8 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
     );
   }
 
+  /// A UI Decision Engine that automatically updates the colors and functions (Assign, Mark as Resolved) of the buttons in the list
+  /// based on the ticket's current status (PENDING, IN_PROGRESS, RESOLVED) and urgency.
   Widget _buildTrailingWidget(Map<String, dynamic> task, bool showAsRed) {
     if (task['status'] == 'PENDING') {
       return ElevatedButton(
@@ -724,7 +679,10 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                     title: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(task['titleStr']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                        Text(
+                                          AdminHelpers.getCategoryTitle(task['categoryRaw'].toString()), 
+                                          style: const TextStyle(fontWeight: FontWeight.bold)
+                                        ),
                                       ],
                                     ),
                                     subtitle: Padding(
@@ -742,7 +700,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
                                           child: Text(
-                                            "${'inst_label'.tr()}: ${_getInstitutionName(assignedTo)}", 
+                                            "${'inst_label'.tr()}: ${AdminHelpers.getInstitutionName(assignedTo)}", 
                                             style: const TextStyle(color: Colors.blue, fontSize: 11, fontWeight: FontWeight.bold),
                                           ),
                                         ),

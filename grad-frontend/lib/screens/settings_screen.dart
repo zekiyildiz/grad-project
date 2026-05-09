@@ -5,6 +5,7 @@ import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 
+/// A configuration model used to manage in-app text sizes, which standardizes scale factors using a type-safe enum architecture.
 enum AppFontSize { small, medium, large, extraLarge }
 
 class SettingsScreen extends StatefulWidget {
@@ -61,6 +62,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// A module that triggers the `context.setLocale` method of the ‘easy_localization’ package to
+  /// change the application's language state (TR/EN) at runtime and on the fly, without requiring a restart.
   void _showLanguageDialog(bool isDark) {
     showDialog(
       context: context,
@@ -123,6 +126,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     int rating = 0;
     showDialog(
       context: context,
+      // Instead of redrawing the entire Settings page during the star-rating process, the StatefulBuilder is used to encapsulate 
+      //state changes within this dialog, thereby improving performance.
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
@@ -209,7 +214,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final isDark = provider.themeMode == ThemeMode.dark;
 
-    // 0: Admin, 2: Çalışan. Bunlardan hiçbiri değilse vatandaştır.
+    // 0: Admin, 2: Employee. If neither of these applies, the person is a citizen.
+    // By checking the logged-in user's permission level (Role ID), settings such as “Accessibility” and 
+    //“Simple Mode”—which are reserved exclusively for citizens— are automatically hidden from the Admin and Staff screens.
     final bool isNormalUser = authProvider.userRoleId != 0 && authProvider.userRoleId != 2;
 
     return Scaffold(
@@ -221,11 +228,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          // Erişilebilirlik başlığını sadece Vatandaşsa (isNormalUser) göster
+          // Show the “Accessibility” heading only if the user is a citizen (isNormalUser)
           if (isNormalUser)
             _buildHeader('accessibility'.tr()),
           
-          // Basit Mod seçeneğini sadece Vatandaşsa (isNormalUser) göster
+          // Show the “Simple Mode” option only if the user is a regular user (isNormalUser)
           if (isNormalUser)
             SwitchListTile(
               activeColor: Colors.orange,
@@ -236,9 +243,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (val) => provider.toggleSimpleMode(val),
             ),
           
-          // Eğer vatandaş değilse (Admin/Çalışan ise) Görünüm başlığı atalım ki aşağıdaki ayarlar havada kalmasın
+          // If they are not a citizen (but an admin or employee), let’s add a “View” header so the settings below aren’t left hanging
           if (!isNormalUser)
-            _buildHeader('Görünüm'), // JSON'a eklemeye gerek yok, idari bir panel
+            _buildHeader('Görünüm'), // No need to add it to JSON; it's an administrative panel
 
           ListTile(
             leading: const Icon(Icons.format_size, color: Colors.purple),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/notification_service.dart';
+import '../utils/admin_helpers.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -35,47 +36,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  String _getCategoryTitle(String category) {
-    String key = category.trim().toUpperCase()
-        .replaceAll('İ', 'I').replaceAll('Ğ', 'G')
-        .replaceAll('Ç', 'C').replaceAll('Ş', 'S')
-        .replaceAll('Ö', 'O').replaceAll('Ü', 'U');
-
-    switch (key) {
-      case 'YANGIN': return 'cat_fire'.tr();
-      case 'GAZ KACAGI': return 'cat_gas'.tr();
-      case 'SU PATLAGI': return 'cat_water'.tr();
-      case 'ELEKTRIK ARIZASI': return 'cat_electric_urgent'.tr();
-      case 'YOL COKMESI': return 'cat_road_collapse'.tr(); 
-      case 'CUKUR': return 'cat_pothole'.tr();
-      case 'COPLUK': return 'cat_garbage'.tr();
-      case 'KIRIK_BANK': return 'cat_bench'.tr();
-      case 'TRAFIK': return 'cat_traffic'.tr();
-      case 'ELEKTRIK': return 'cat_electric'.tr();
-      case 'SCOOTER': return 'cat_scooter'.tr();
-      case 'POSTER': return 'cat_poster'.tr();
-      case 'AGAC': return 'cat_tree'.tr();
-      case 'DIGER': return 'cat_other'.tr(); 
-      default: return category;
-    }
-  }
-
-  String _getInstitutionName(String code) {
-    String cleanCode = code.trim().toUpperCase().replaceAll('INST_', '');
-    switch (cleanCode) {
-      case 'FEN_ISLERI': return 'inst_fen'.tr();
-      case 'TEDAS': return 'inst_tedas'.tr(); 
-      case 'ASKI': return 'inst_aski'.tr(); 
-      case 'ZABITA': return 'inst_zabita'.tr();
-      case 'TEMIZLIK': return 'inst_temizlik'.tr();
-      case 'EMNIYET': return 'inst_police_fire'.tr();
-      case 'UKOME': return 'inst_ukome'.tr();
-      case 'PARK_BAHCE': return 'inst_park_bahce'.tr();
-      case 'DIGER': return 'inst_other_manual'.tr();
-      default: return code; // yönetici manuel ne yazdıysa onu bozmadan gösterir
-    }
-  }
-
   String _getLocalizedTitle(String rawTitle) {
     String t = rawTitle.toUpperCase();
     if (t.contains('ACİL') || t.contains('URGENT') || t.contains('🚨')) {
@@ -96,17 +56,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return rawTitle; 
   }
 
-  //  MESAJLARI AKILLI ÇEVİREN FONKSİYON 
+  /// Function for Smart Message Translation 
+  /// By analyzing static notification texts received from the backend (e.g., “Your complaint has been forwarded to FEN_ISLERI”)
+  /// and translating them autonomously at runtime based on the application's current language (Turkish/English)
   String _getLocalizedMessage(String rawMessage) {
     String m = rawMessage;
 
-    // Yeni Şikayet Kalıbı: "... konulu şikayetiniz sisteme kaydedildi..."
+    // New Complaint Template: “... Your complaint regarding [subject] has been recorded in the system...”
     if (m.contains('sisteme kaydedildi') && !m.contains('acil')) {
       String cat = m.split(' konulu').first.trim(); 
-      return 'notif_msg_created'.tr(args: [_getCategoryTitle(cat)]);
+      return 'notif_msg_created'.tr(args: [AdminHelpers.getCategoryTitle(cat)]);
     }
 
-    // Durum Değişikliği Kalıbı: "... durumu Resolved olarak güncellenmiştir"
+    // Status Change Template: “... status has been updated to Resolved”
     if (m.contains('durumu') && m.contains('güncellenmiştir')) {
       if (m.contains('RESOLVED') || m.contains('Çözüldü') || m.contains('COMPLETED')) {
         return 'notif_msg_status_resolved'.tr();
@@ -116,22 +78,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
       return 'notif_msg_status_updated'.tr();
     }
 
-    // Kuruma İletildi Kalıbı: "Şikayetiniz ilgili kuruma (...) iletildi."
+    // “Forwarded to the Relevant Authority” Template: “Your complaint has been forwarded to the relevant authority (...).”
     if (m.contains('ilgili kuruma') && m.contains('iletildi')) {
       String inst = "";
       if (m.contains('(') && m.contains(')')) {
         inst = m.substring(m.indexOf('(') + 1, m.indexOf(')')); 
       }
       
-      // Ham kodu (PARK_BAHCE) kullanıcı dostu isme çevirerek mesaja ekleme
-      String translatedInst = _getInstitutionName(inst);
+      // Convert the raw code (PARK_BAHCE) to a user-friendly name and add it to the message
+      String translatedInst = AdminHelpers.getInstitutionName(inst);
       return 'notif_msg_assigned'.tr(args: [translatedInst]);
     }
 
-    // Acil Durum Kalıbı: "... ihbarınız sistemimize acil koduyla kaydedildi..."
+    // Emergency Template: “... Your report has been logged in our system with an emergency code...”
     if (m.contains('acil koduyla')) {
       String cat = m.split(' ihbarınız').first.trim();
-      return 'notif_msg_urgent'.tr(args: [_getCategoryTitle(cat)]);
+      return 'notif_msg_urgent'.tr(args: [AdminHelpers.getCategoryTitle(cat)]);
     }
 
     m = m.replaceAll("'RESOLVED'", 'status_resolved'.tr());
@@ -150,7 +112,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('notif_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('notif_title'.tr(), style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -182,6 +144,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
                   bool isUrgentNotif = rawTitle.toUpperCase().contains('ACİL') || rawTitle.contains('🚨');
 
+                  // To enhance the user experience (UX), the ‘Swipe-to-Delete’ gesture has been integrated. While the deletion process 
+                  // is sent asynchronously to the backend, the UI updates instantly
                   return Dismissible(
                     key: Key(id),
                     direction: DismissDirection.endToStart,
@@ -212,7 +176,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           )
                         ),
                         subtitle: Text(
-                          _getLocalizedMessage(message), // AKILLI MESAJ ÇEVİRİSİ 
+                          _getLocalizedMessage(message), // SMART MESSAGE TRANSLATION 
                           style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.black54, fontSize: 13)
                         ),
                         trailing: Icon(
