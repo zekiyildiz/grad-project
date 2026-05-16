@@ -5,27 +5,6 @@ An end-to-end, hybrid Cloud-Edge computing solution designed to modernize urban 
 > **TÜBİTAK 2209-A National Grant Recipient** 🎓 ✅  
 > Developed as a Graduation Project by Senior Computer Engineering Students at Ankara Yıldırım Beyazıt University (AYBÜ).
 
-## 🏛️ System Architecture & Logic Flow
-
-The system is built on a robust 3-tier hybrid architecture maximizing on-device efficiency and data isolation:
-
-[ Citizen Flutter App ] ──(On-Device YOLOv8n TFLite)──> Anomaly Detected (mAP: 97.5%)
-         │
-         ├──(HTTP POST / JSON Payload)──> [ Node.js Express Backend ] via JWT & Zod Gate
-                                                    │
-                           ┌────────────────────────┴────────────────────────┐
-                           ▼                                                 ▼
-            [ Cloud Firestore Database ]                      [ Isolated Server Storage ]
-             (Metadata & Static URIs)                          (High-Res Anomaly Photos)
-                           │                                                 │
-            ┌──────────────┴─────────────────────────────────────────────────┘
-            ▼
-   ┌─────────────────────────────────────────┐
-   │ Real-Time Stream (Admin & Worker Apps)  │
-   └────────────────────┬────────────────────┘
-                        ▼
-       [ Worker Marks Anomaly as RESOLVED ] ──> UI Updates in Real-Time 
-
 ## 🏛️ Architectural Overview & System Components
 The system is engineered across five distinct specialized layers to ensure maximum scalability, security, and real-time synchronization:
 
