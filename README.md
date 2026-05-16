@@ -9,7 +9,7 @@ An end-to-end, hybrid Cloud-Edge computing solution designed to modernize urban 
 
 The system is built on a robust 3-tier hybrid architecture maximizing on-device efficiency and data isolation:
 
-<img width="2816" height="1536" alt="Gemini_Generated_Image_tbzjb7tbzjb7tbzj" src="https://github.com/user-attachments/assets/9dd74782-73e3-47d1-a106-9a6918cb2644" />
+![System Architecture](https://raw.githubusercontent.com/zekiyildiz/grad-project/v1/architecture.png)
 
 ## 🏛️ Architectural Overview & System Components
 The system is engineered across five distinct specialized layers to ensure maximum scalability, security, and real-time synchronization:
