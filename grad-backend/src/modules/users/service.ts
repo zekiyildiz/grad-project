@@ -2,6 +2,7 @@ import { getAuth, getFirestore } from '../../config/firebase';
 import { UpdateProfileDto } from './dto';
 
 export class UserService {
+    
     /**
      * Get user profile with statistics
      */
@@ -19,12 +20,12 @@ export class UserService {
             // Get user statistics from reports collection
             const reportsSnapshot = await getFirestore()
                 .collection('reports')
-                .where('userId', '==', uid)
+                .where('userId', '==', uid) // Retrieve only the records belonging to this citizen
                 .get();
 
             const totalReports = reportsSnapshot.size;
             const resolvedReports = reportsSnapshot.docs.filter(
-                doc => doc.data().status === 'resolved' || doc.data().status === 'completed'
+            doc => doc.data().status?.toUpperCase() === 'RESOLVED' || doc.data().status?.toUpperCase() === 'COMPLETED'
             ).length;
 
             // Get survey participation count
@@ -35,6 +36,7 @@ export class UserService {
 
             const surveyCount = surveysSnapshot.size;
 
+            // Combine all this data into a single JSON object and send it back to the controller
             return {
                 user: userData,
                 statistics: {
@@ -71,6 +73,7 @@ export class UserService {
             if (data.displayName) updateData.displayName = data.displayName;
             if (data.photoURL) updateData.photoURL = data.photoURL;
 
+            // Update this specific package we created in the database
             await userRef.update(updateData);
 
             // Get updated user data

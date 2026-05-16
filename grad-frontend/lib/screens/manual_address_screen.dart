@@ -1,170 +1,249 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart'; // Harita paketi
-import 'package:latlong2/latlong.dart'; // Koordinat tipi için
+import 'package:flutter_map/flutter_map.dart'; 
+import 'package:latlong2/latlong.dart'; 
+import 'package:easy_localization/easy_localization.dart'; 
+import 'package:geocoding/geocoding.dart'; 
+
+import '../services/report_service.dart';
 
 class ManualAddressScreen extends StatefulWidget {
-  final String emergencyType;
+  final String emergencyType; 
+  final String description; // Will retain the description from the previous page
 
-  const ManualAddressScreen({Key? key, required this.emergencyType}) : super(key: key);
-
+  const ManualAddressScreen({Key? key, required this.emergencyType, required this.description}) : super(key: key);
   @override
   State<ManualAddressScreen> createState() => _ManualAddressScreenState();
 }
 
 class _ManualAddressScreenState extends State<ManualAddressScreen> {
-  final _addressController = TextEditingController();
+  String _fetchedAddress = "";
+  final TextEditingController _detailsController = TextEditingController();
+  
+  final ReportService _reportService = ReportService();
+
   bool _isLoading = false;
+  bool _isFetchingAddress = false; 
+  LatLng _selectedPoint = const LatLng(39.9334, 32.8597); 
+  final MapController _mapController = MapController();
 
-  // Başlangıç konumu: Keçiören (AYBÜ Kampüsü civarı)
-  LatLng _selectedPoint = const LatLng(39.9711, 32.8186); 
+  @override
+  void dispose() {
+    _detailsController.dispose();
+    super.dispose();
+  }
 
-  void _submitAddress() async {
-    if (_addressController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Lütfen açık adresinizi de yazınız.")),
-      );
+  /// Converts touch coordinates on the map to a human-readable text address.
+  /// A 5-second timeout has been implemented to guard against API delays,
+  /// if no response is received, the coordinate text is returned as a fallback.
+  Future<void> _onMapTap(TapPosition tapPosition, LatLng point) async {
+    setState(() {
+      _selectedPoint = point;
+      _isFetchingAddress = true; 
+    });
+
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        point.latitude, 
+        point.longitude
+      ).timeout(const Duration(seconds: 5));
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        String newAddress = '${place.thoroughfare ?? ''} ${place.subThoroughfare ?? ''}, ${place.subLocality ?? ''}, ${place.administrativeArea ?? ''}';
+        newAddress = newAddress.replaceAll(' ,', ',').replaceAll(RegExp(r'^,|,$'), '').trim();
+
+        if (mounted) {
+          setState(() {
+            _fetchedAddress = newAddress.isEmpty ? "manual_loc_not_found".tr() : newAddress; 
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Adres metne çevrilemedi: $e");
+      if (mounted) {
+        setState(() {
+          _fetchedAddress = "${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}";
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingAddress = false); 
+      }
+    }
+  }
+
+Future<void> _submitAddress() async {
+    if (_fetchedAddress.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('manual_loc_error'.tr()), backgroundColor: Colors.red));
       return;
     }
 
     setState(() => _isLoading = true);
-    // Simülasyon
-    await Future.delayed(const Duration(seconds: 2));
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+    try {
+      String finalAddressToSave = _fetchedAddress;
+      if (_detailsController.text.trim().isNotEmpty) {
+        finalAddressToSave += " | Ek Bilgi: ${_detailsController.text.trim()}";
+      }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.check_circle, size: 60, color: Colors.green),
-        title: const Text("İhbar İletildi"),
-        content: Text(
-          "${widget.emergencyType} ihbarınız işaretlediğiniz konum ve adres bilgisiyle iletildi.\n\n"
-          "Seçilen: ${_selectedPoint.latitude.toStringAsFixed(4)}, ${_selectedPoint.longitude.toStringAsFixed(4)}",
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context); // ManualAddressScreen kapat
-              Navigator.pop(context); // EmergencyScreen kapat (Ana sayfaya dön)
-            },
-            child: const Text("Tamam"),
-          ),
-        ],
-      ),
-    );
+      await _reportService.createReport(
+        category: widget.emergencyType,
+        description: widget.description,
+        latitude: _selectedPoint.latitude,
+        longitude: _selectedPoint.longitude,
+        address: finalAddressToSave, 
+        isUrgent: true,
+        imageUrls: [],
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context, finalAddressToSave); 
+      
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Haritadan Konum Seç"),
+        title: Text('manual_loc_title'.tr(), style: const TextStyle(color: Colors.white)), 
         backgroundColor: Colors.red.shade700,
-        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
-          // 1. HARİTA ALANI
           Expanded(
-            flex: 3, // Sayfanın çoğunu harita kaplasın
-            child: Stack(
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _selectedPoint,
+                initialZoom: 15.0,
+                onTap: _onMapTap, 
+              ),
               children: [
-                FlutterMap(
-                  options: MapOptions(
-                    initialCenter: _selectedPoint,
-                    initialZoom: 15.0,
-                    onTap: (tapPosition, point) {
-                      setState(() {
-                        _selectedPoint = point; // Dokunulan yere pini taşı
-                      });
-                    },
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.akilli_belediye.app',
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: _selectedPoint,
-                          width: 80,
-                          height: 80,
-                          child: const Icon(
-                            Icons.location_on,
-                            color: Colors.red,
-                            size: 45,
-                          ),
-                        ),
-                      ],
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.team29.akillibelediye',
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _selectedPoint,
+                      width: 50, height: 50,
+                      child: const Icon(Icons.location_on, color: Colors.red, size: 45),
                     ),
                   ],
-                ),
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      "Haritaya dokunarak tam konumu işaretleyin",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                  ),
                 ),
               ],
             ),
           ),
 
-          // 2. ADRES GİRİŞ ALANI
-          Expanded(
-            flex: 2,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              color: Colors.white,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Açık Adres / Tarif:", 
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _addressController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: "Örn: Takdir Cad. No:10, Bakkalın yanı...",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                      ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade900 : Colors.white,
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))],
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.location_city, color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Text("manual_loc_selected".tr(), style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold, fontSize: 13)), 
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // LOCKED ADDRESS BAR
+                  // A read-only UI component has been used to prevent the user from accidentally deleting or corrupting the main address data derived from GPS.
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300)
                     ),
-                    const SizedBox(height: 15),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.shade700,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (_isFetchingAddress)
+                          const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        else
+                          Icon(Icons.lock, size: 16, color: Colors.grey.shade500),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _fetchedAddress.isEmpty ? 'manual_loc_hint'.tr() : _fetchedAddress, 
+                            style: TextStyle(
+                              fontSize: 14, 
+                              color: _fetchedAddress.isEmpty ? Colors.grey : (isDark ? Colors.white70 : Colors.black87)
+                            ),
+                          ),
                         ),
-                        onPressed: _isLoading ? null : _submitAddress,
-                        icon: _isLoading 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
-                          : const Icon(Icons.send, color: Colors.white),
-                        label: const Text("KONUMU ONAYLA VE GÖNDER", 
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 15),
+
+                  Row(
+                    children: [
+                      Icon(Icons.edit_note, color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Text("manual_loc_extra".tr(), style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold, fontSize: 13)), 
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // EDITABLE DESCRIPTION BOX
+                  // An additional data field that prevents the main address from being altered, giving the user the freedom to enter only 
+                  // specific details such as ‘Building Number, Floor, Apartment’.
+                  TextField(
+                    controller: _detailsController,
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: "manual_loc_extra_hint".tr(), 
+                      hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.red.shade700, width: 2),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity, height: 50,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade700, 
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                      ),
+                      onPressed: _isLoading ? null : _submitAddress,
+                      icon: _isLoading 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                          : const Icon(Icons.send, color: Colors.white),
+                      label: Text('manual_loc_btn'.tr(), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)), 
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

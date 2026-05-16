@@ -1,5 +1,6 @@
-/// Ankara ilçeleri ve mahalleleri
+// Districts and neighborhoods of Ankara
 class AnkaraLocationData {
+  // ‘static const’ was used to ensure the data cannot be modified and is stored in RAM only once
   static const Map<String, List<String>> districtNeighborhoods = {
     'Çankaya': [
       'Akpınar', 'Anıttepe', 'Aşağı İmrahor', 'Aşağı Öveçler', 'Aşağı Topraklık',
@@ -63,10 +64,10 @@ class AnkaraLocationData {
     ],
   };
 
-  /// İlçe listesi
+  // List of districts
   static List<String> get districts => districtNeighborhoods.keys.toList();
 
-  /// Belirli bir ilçenin mahallelerini döndürür
+  // Returns the neighborhoods of a specific district
   static List<String> getNeighborhoods(String district) {
     return districtNeighborhoods[district] ?? [];
   }

@@ -1,31 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// Providerlar
-// (Paket isimlerin farklıysa kendi proje ismine göre düzelt, örn: import '../providers/...')
+import 'package:easy_localization/easy_localization.dart'; 
 
+// Providers
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 
-// Ekranlar
-
+// Screens
 import 'screens/login_screen.dart';
 import 'screens/homepage_screen.dart';
-import 'screens/admin_panel.dart'; // EKLENDİ: Admin paneli
-import 'screens/employee_tasks_screen.dart'; // EKLENDİ: Çalışan paneli
+import 'screens/admin_panel.dart'; 
+import 'screens/employee_tasks_screen.dart'; 
 
-void main() {
+void main() async {
+  // Wait for the Flutter engine to start before loading the language pack
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-      ],
-
-      child: const AkilliBelediyeApp(),
+    // We built the app with a multilingual architecture
+    EasyLocalization(
+      supportedLocales: const [Locale('tr', 'TR'), Locale('en', 'US')],
+      path: 'assets/translations', 
+      fallbackLocale: const Locale('tr', 'TR'), 
+      useOnlyLangCode: true, // Prevents the en-US.json error!
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => UserProvider()),
+        ],
+        child: const AkilliBelediyeApp(),
+      ),
     ),
   );
 }
@@ -38,16 +45,14 @@ class AkilliBelediyeApp extends StatefulWidget {
 }
 
 class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
-  // LoginScreen instance'ını korumak için
-
+  // To preserve the LoginScreen instance
   LoginScreen? _loginScreen;
 
   @override
   void initState() {
     super.initState();
 
-    // Uygulama açılınca token kontrolü yap
-
+    // Check the token when the app opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AuthProvider>(context, listen: false).init();
     });
@@ -56,40 +61,37 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-
     final authProvider = Provider.of<AuthProvider>(context);
 
     return MaterialApp(
       title: 'Akıllı Belediye',
-
       debugShowCheckedModeBanner: false,
 
-      // TEMA AYARLARI
+      // MaterialApp settings required for a multilingual setup
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
+
+      // THEME SETTINGS
       themeMode: themeProvider.themeMode,
 
-      // Aydınlık Tema
+      // Bright Theme
       theme: ThemeData(
         primarySwatch: Colors.blue,
-
         scaffoldBackgroundColor: Colors.white,
-
         appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF4094FF)),
-
         brightness: Brightness.light,
       ),
 
-      // Karanlık Tema
+      // Dark Theme
       darkTheme: ThemeData(
         primarySwatch: Colors.blue,
-
         scaffoldBackgroundColor: const Color(0xFF121212),
-
         appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1F1F1F)),
-
         brightness: Brightness.dark,
       ),
 
-      // YAZI BOYUTU AYARI
+      // FONT SIZE SETTING
       builder: (context, child) {
         final mediaQueryData = MediaQuery.of(context);
 
@@ -97,7 +99,6 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
           data: mediaQueryData.copyWith(
             textScaler: TextScaler.linear(themeProvider.textScaleFactor),
           ),
-
           child: child!,
         );
       },
@@ -108,32 +109,23 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
   }
 
   Widget _buildHomeScreen(AuthProvider authProvider) {
-    // --- GEÇİCİ TASARIM MODU ---
-    // return const HomeScreen();
-    // ------------------------------------------------
+
     switch (authProvider.state) {
       case AuthState.initial:
       case AuthState.loading:
 
-        // Yükleniyor Ekranı
-
+        // Loading Screen
         return const Scaffold(
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-
               children: [
                 Icon(Icons.location_city, size: 80, color: Color(0xFF4094FF)),
-
                 SizedBox(height: 24),
-
                 CircularProgressIndicator(color: Color(0xFF4094FF)),
-
                 SizedBox(height: 16),
-
                 Text(
                   'Yükleniyor...',
-
                   style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               ],
@@ -142,15 +134,13 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
         );
 
       case AuthState.authenticated:
-        _loginScreen = null; // Giriş başarılıysa login ekranını hafızadan sil
+        _loginScreen = null; // If the login is successful, clear the login screen from memory
 
-        // --- BURASI DEĞİŞTİ: ROL KONTROLÜ EKLENDİ ---
+        // --- ROLE CHECK ADDED ---
 
         // 0: Admin
-
-        // 2: Çalışan (Employee)
-
-        // Diğer: Vatandaş
+        // 2: Employee
+        // Other: Citizen
 
         if (authProvider.userRoleId == 0) {
           return const AdminDashboardScreen();
@@ -165,11 +155,10 @@ class _AkilliBelediyeAppState extends State<AkilliBelediyeApp> {
       case AuthState.unauthenticated:
       case AuthState.error:
 
-        // Hata veya giriş yapılmamışsa Login ekranı
+      // If an error occurs or no login is made, display the login screen
+      _loginScreen ??= const LoginScreen();
 
-        _loginScreen ??= const LoginScreen();
-
-        return _loginScreen!;
+      return _loginScreen!;
     }
   }
 }

@@ -8,8 +8,8 @@ export const registerSchema = z.object({
     fullName: z.string().optional(), // Optional, will default to name if not provided
     phone: z.string().optional(),
     address: z.string().optional(),
-    district: z.string().optional(), // İlçe
-    neighborhood: z.string().optional(), // Mahalle
+    district: z.string().optional(), // district/ilçe
+    neighborhood: z.string().optional(), // neighborhood/mahalle
     displayName: z.string().optional(),
 });
 

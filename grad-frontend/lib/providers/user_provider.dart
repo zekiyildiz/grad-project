@@ -16,6 +16,34 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  // A function that safely parses nested JSON objects received from the backend
+  Map<String, dynamic> _extractUserData(dynamic response) {
+    if (response is! Map<String, dynamic>) return {};
+
+    // Case 1: If the backend returns { “success”: true, “data”: { ‘user’: {...}, “statistics”: {...} } }
+    if (response.containsKey('data')) {
+      final data = response['data'];
+      
+      // GetProfile request status
+      if (data is Map<String, dynamic> && data.containsKey('user')) {
+        return data['user'] as Map<String, dynamic>;
+      }
+      
+      // UpdateProfile request status (returns the user directly)
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+    }
+
+    // Case 2: If the ApiClient has already retrieved and sent the data
+    if (response.containsKey('user')) {
+      return response['user'] as Map<String, dynamic>;
+    }
+
+    // If none of the above, use the response itself
+    return response;
+  }
+
   /// Fetch user profile from API
   Future<void> fetchProfile() async {
     _isLoading = true;
@@ -24,7 +52,11 @@ class UserProvider extends ChangeNotifier {
 
     try {
       final response = await _userService.getProfile();
-      _profile = UserModel.fromJson(response['user'] ?? response);
+      
+      // Safely open the package and retrieve the user's actual data
+      final userData = _extractUserData(response); 
+      
+      _profile = UserModel.fromJson(userData);
       _isLoading = false;
       notifyListeners();
     } on ApiException catch (e) {
@@ -55,7 +87,10 @@ class UserProvider extends ChangeNotifier {
         address: address,
       );
       
-      _profile = UserModel.fromJson(response['user'] ?? response);
+      // Safely open the updated package
+      final userData = _extractUserData(response);
+      
+      _profile = UserModel.fromJson(userData);
       _isLoading = false;
       notifyListeners();
       return true;

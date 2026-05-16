@@ -8,6 +8,7 @@ import { initFirebase, getAuth, getFirestore } from '../config/firebase';
 // Initialize Firebase first
 initFirebase();
 
+//When this script runs, it checks Firebase Authentication. If there is no user named “admin@test.com” in the system, it creates a system administrator with a password set to “string”.
 async function seedAdmin() {
     console.log('🚀 Starting admin seed...');
 

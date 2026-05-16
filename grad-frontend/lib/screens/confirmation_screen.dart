@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-
+import 'package:easy_localization/easy_localization.dart'; // EKLENDİ
+  
+// We will use this screen after a successful submission.
 class ConfirmationScreen extends StatelessWidget {
-  // Başarılı bir gönderim sonrası bu ekranı kullanacağız.
   const ConfirmationScreen({Key? key}) : super(key: key);
 
   @override
@@ -14,40 +15,41 @@ class ConfirmationScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 1. Onay İkonu (Büyük ve Yeşil)
+              // 1. Confirmation Icon (Large and Green)
               const Icon(
                 Icons.check_circle,
-                color: Colors.green, // Başarı için yeşil renk
+                color: Colors.green, // Green for success
                 size: 120,
               ),
               const SizedBox(height: 30),
 
-              // 2. Başlık ve Açıklama
-              const Text(
-                'Raporunuz Gönderildi!',
+              // 2. Title and Description
+              Text(
+                'conf_title'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.green,
                 ),
               ),
               const SizedBox(height: 15),
-              const Text(
-                'Şikayetiniz belediye sistemine güvenli bir şekilde iletildi. Çözüm sürecini "Şikayet Geçmişim" sekmesinden takip edebilirsiniz.',
+              Text(
+                'conf_desc'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
                 ),
               ),
               const SizedBox(height: 60),
 
-              // 3. Ana Sayfaya Dön Butonu
+              // 3. Back to Home Button
               ElevatedButton.icon(
                 onPressed: () {
-                  // Kullanıcıyı direkt ana sayfaya döndürmek için
-                  // Mevcut tüm ekranları pop edip ana sayfaya gider.
+                  // To redirect the user directly to the home page
+                  // Closes all open screens and navigates to the home page.
+                  // A redirection mechanism that prevents memory leaks and safely returns the system to the root directory.
                   Navigator.popUntil(context, (route) => route.isFirst);
                 },
                 style: ElevatedButton.styleFrom(
@@ -59,9 +61,9 @@ class ConfirmationScreen extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.arrow_back_ios_new),
-                label: const Text(
-                  'Ana Sayfaya Dön',
-                  style: TextStyle(fontSize: 18),
+                label: Text(
+                  'conf_back_btn'.tr(),
+                  style: const TextStyle(fontSize: 18),
                 ),
               ),
             ],

@@ -1,32 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; 
 
-// Simüle Edilen Rozet Veri Modeli
 class Badge {
-  final String name;
-  final String description;
+  final String nameKey;
+  final String descriptionKey;
   final IconData icon;
   final bool unlocked;
   final Color color;
 
-  const Badge(this.name, this.description, this.icon, this.unlocked, this.color);
+  const Badge(this.nameKey, this.descriptionKey, this.icon, this.unlocked, this.color);
 }
-
-// Simüle Edilen Rozet Listesi
-const List<Badge> dummyBadges = [
-  Badge('İlk Adım', 'İlk şikayet raporunuzu başarıyla gönderdiniz.', Icons.star, true, Colors.amber),
-  Badge('Mahalle Gözcüsü', 'Toplam 5 sorunu başarıyla bildirdiniz.', Icons.visibility, true, Colors.green),
-  Badge('Çözüm Elçisi', 'Bildirdiğiniz 10 sorun başarıyla çözüldü.', Icons.check_circle, false, Colors.grey),
-  Badge('Katılımcı Vatandaş', '3 farklı ankete/öneriye katkıda bulundunuz.', Icons.poll, true, Colors.blue),
-  Badge('Uzman Gözlemci', 'Farklı kategorilerde 20 sorun bildirin.', Icons.workspace_premium, false, Colors.brown),
-];
 
 class PerformanceScreen extends StatelessWidget {
   const PerformanceScreen({Key? key}) : super(key: key);
 
   static const Color primaryBlue = Color(0xFF4094FF);
 
-  // PUAN ALANI - Sadece Puan ve Açıklama
-  Widget _buildPointsHeader(int currentPoints) {
+  // SCORE AREA 
+  Widget _buildPointsHeader(BuildContext context, int currentPoints) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
@@ -40,9 +31,32 @@ class PerformanceScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Text(
-            'Toplam Performans Puanınız',
-            style: TextStyle(fontSize: 16, color: Colors.white70, fontWeight: FontWeight.w500),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  'perf_total_points'.tr(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.white70, fontWeight: FontWeight.w500),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      // Static posts have been linked to JSON
+                      title: Text('perf_info_title'.tr()), 
+                      content: Text('perf_info_desc'.tr()),
+                      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text('close'.tr()))],
+                    ),
+                  );
+                },
+                child: const Icon(Icons.info_outline, color: Colors.white70, size: 20),
+              )
+            ],
           ),
           const SizedBox(height: 10),
           Text(
@@ -56,9 +70,10 @@ class PerformanceScreen extends StatelessWidget {
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              'Şehriniz için değer üretiyorsunuz!',
-              style: TextStyle(color: Colors.white, fontSize: 13),
+            child: Text(
+              'perf_value_text'.tr(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
             ),
           ),
         ],
@@ -66,49 +81,91 @@ class PerformanceScreen extends StatelessWidget {
     );
   }
 
-  // ROZET KARTI
-  Widget _buildBadgeCard(Badge badge) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 75,
-          height: 75,
-          decoration: BoxDecoration(
-            color: badge.unlocked ? badge.color.withOpacity(0.12) : Colors.grey.shade100,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: badge.unlocked ? badge.color : Colors.grey.shade300,
-              width: 2.5,
+  // BADGE CARD 
+  /// An interface component that automatically Eeconfigures color, icon, and clickability properties based on the badge's ‘unlocked’ (On/Off) state.
+  Widget _buildBadgeCard(BuildContext context, Badge badge) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(15),
+      onTap: () {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(badge.nameKey.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(badge.descriptionKey.tr()),
+              ],
+            ),
+            backgroundColor: badge.unlocked ? badge.color : Colors.grey.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 75,
+            height: 75,
+            decoration: BoxDecoration(
+              color: badge.unlocked 
+                  ? badge.color.withOpacity(0.12) 
+                  : (isDark ? Colors.grey.shade900 : Colors.grey.shade100), 
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: badge.unlocked 
+                    ? badge.color 
+                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                width: 2.5,
+              ),
+            ),
+            child: Icon(
+              badge.unlocked ? badge.icon : Icons.lock_outline,
+              size: 32,
+              color: badge.unlocked 
+                  ? (isDark ? badge.color.withOpacity(0.8) : badge.color) 
+                  : (isDark ? Colors.grey.shade600 : Colors.grey.shade400),
             ),
           ),
-          child: Icon(
-            badge.unlocked ? badge.icon : Icons.lock_outline,
-            size: 32,
-            color: badge.unlocked ? badge.color : Colors.grey.shade400,
+          const SizedBox(height: 12),
+          Text(
+            badge.nameKey.tr(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: badge.unlocked ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
+              color: badge.unlocked 
+                  ? (isDark ? Colors.white : Colors.black87) 
+                  : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          badge.name,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: badge.unlocked ? FontWeight.bold : FontWeight.normal,
-            fontSize: 13,
-            color: badge.unlocked ? Colors.black87 : Colors.grey.shade600,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final int currentPoints = 850;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final List<Badge> dummyBadges = [
+      const Badge('perf_badge1_title', 'perf_badge1_desc', Icons.star, true, Colors.amber),
+      const Badge('perf_badge2_title', 'perf_badge2_desc', Icons.visibility, true, Colors.green),
+      const Badge('perf_badge3_title', 'perf_badge3_desc', Icons.check_circle, false, Colors.grey),
+      const Badge('perf_badge4_title', 'perf_badge4_desc', Icons.poll, true, Colors.blue),
+      const Badge('perf_badge5_title', 'perf_badge5_desc', Icons.workspace_premium, false, Colors.brown),
+    ];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Performans ve Rozetler', style: TextStyle(color: Colors.white)),
+        title: Text('perf_title'.tr(), style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryBlue,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -118,13 +175,13 @@ class PerformanceScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildPointsHeader(currentPoints),
+            _buildPointsHeader(context, currentPoints),
             
             const SizedBox(height: 40),
 
-            const Text(
-              'Rozet Koleksiyonunuz',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+            Text(
+              'perf_badge_collection'.tr(),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
             ),
             const SizedBox(height: 24),
 
@@ -139,7 +196,7 @@ class PerformanceScreen extends StatelessWidget {
               ),
               itemCount: dummyBadges.length,
               itemBuilder: (context, index) {
-                return _buildBadgeCard(dummyBadges[index]);
+                return _buildBadgeCard(context, dummyBadges[index]);
               },
             ),
           ],

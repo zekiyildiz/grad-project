@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart'; 
 import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 
-// Enumlar (Sadece burada kullanılanlar)
+/// A configuration model used to manage in-app text sizes, which standardizes scale factors using a type-safe enum architecture.
 enum AppFontSize { small, medium, large, extraLarge }
 
 class SettingsScreen extends StatefulWidget {
@@ -16,13 +17,12 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   
-  // Font Size Label Helper
   String _getFontSizeLabel(double scale) {
-    if (scale == 0.8) return 'Küçük / Small';
-    if (scale == 1.0) return 'Orta / Medium';
-    if (scale == 1.2) return 'Büyük / Large';
-    if (scale == 1.4) return 'Çok Büyük / Extra Large';
-    return 'Orta';
+    if (scale == 0.8) return 'settings_font_small'.tr();
+    if (scale == 1.0) return 'settings_font_medium'.tr();
+    if (scale == 1.2) return 'settings_font_large'.tr();
+    if (scale == 1.4) return 'settings_font_xlarge'.tr();
+    return 'settings_font_medium'.tr();
   }
 
   double _getScaleFromEnum(AppFontSize size) {
@@ -34,22 +34,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // --- DİYALOGLAR ---
-
-  // 1. Yazı Boyutu Diyaloğu
-  void _showFontSizeDialog(ThemeProvider provider) {
+  void _showFontSizeDialog(ThemeProvider provider, bool isDark) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(provider.translate('font_size')),
+        backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+        title: Text('font_size'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: AppFontSize.values.map((size) {
             double scale = _getScaleFromEnum(size);
             return RadioListTile<double>(
-              title: Text(_getFontSizeLabel(scale)),
+              title: Text(_getFontSizeLabel(scale), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
               value: scale,
               groupValue: provider.textScaleFactor,
+              activeColor: Colors.blue,
               onChanged: (val) {
                 if (val != null) {
                   provider.setFontSize(val);
@@ -63,39 +62,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // 2. Dil Seçim Diyaloğu (ARTIK ÇALIŞIYOR)
-  void _showLanguageDialog(ThemeProvider provider) {
+  /// A module that triggers the `context.setLocale` method of the ‘easy_localization’ package to
+  /// change the application's language state (TR/EN) at runtime and on the fly, without requiring a restart.
+  void _showLanguageDialog(bool isDark) {
     showDialog(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: Text(provider.translate('language')),
+        backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+        title: Text('language'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
         children: [
           SimpleDialogOption(
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Text('Türkçe'),
-                if (provider.language == AppLanguage.turkish) 
+                Text('Türkçe', style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black87)),
+                const Spacer(),
+                if (context.locale.languageCode == 'tr') 
                   const Icon(Icons.check, color: Colors.blue),
               ],
             ),
-            onPressed: () {
-              provider.setLanguage(AppLanguage.turkish); // Dili değiştir
-              Navigator.pop(ctx);
+            onPressed: () async {
+              await context.setLocale(const Locale('tr', 'TR'));
+              if (ctx.mounted) Navigator.pop(ctx);
             },
           ),
           SimpleDialogOption(
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Text('English'),
-                if (provider.language == AppLanguage.english) 
+                Text('English', style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black87)),
+                const Spacer(),
+                if (context.locale.languageCode == 'en') 
                   const Icon(Icons.check, color: Colors.blue),
               ],
             ),
-            onPressed: () {
-              provider.setLanguage(AppLanguage.english); // Dili değiştir
-              Navigator.pop(ctx);
+            onPressed: () async {
+              await context.setLocale(const Locale('en', 'US'));
+              if (ctx.mounted) Navigator.pop(ctx);
             },
           ),
         ],
@@ -103,175 +106,95 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // 3. Gizlilik Politikası Diyaloğu (YENİ)
-  void _showPrivacyDialog(ThemeProvider provider) {
+  void _showPrivacyDialog(bool isDark) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(provider.translate('privacy')),
+        backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+        title: Text('privacy'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
         content: SingleChildScrollView(
-          child: Text(provider.translate('privacy_content')),
+          child: Text('privacy_content'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade300 : Colors.black87)),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(provider.translate('close')),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('close'.tr())),
         ],
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Provider'ı dinle
-    final provider = Provider.of<ThemeProvider>(context);
-    final isDark = provider.themeMode == ThemeMode.dark;
-
-    return Scaffold(
-      appBar: AppBar(
-        // Başlık artık dinamik!
-        title: Text(provider.translate('settings_title'), style: const TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: ListView(
-        children: [
-          _buildHeader(provider.translate('accessibility')),
-          
-          ListTile(
-            leading: const Icon(Icons.format_size, color: Colors.purple),
-            title: Text(provider.translate('font_size')),
-            subtitle: Text(_getFontSizeLabel(provider.textScaleFactor)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showFontSizeDialog(provider),
-          ),
-          
-          SwitchListTile(
-            activeColor: Colors.blue,
-            secondary: const Icon(Icons.dark_mode, color: Colors.blueGrey),
-            title: Text(provider.translate('dark_mode')),
-            value: isDark,
-            onChanged: (val) => provider.toggleTheme(val),
-          ),
-
-          const Divider(),
-          _buildHeader(provider.translate('general')),
-
-          ListTile(
-            leading: const Icon(Icons.language, color: Colors.blue),
-            title: Text(provider.translate('language')),
-            subtitle: Text(provider.language == AppLanguage.turkish ? 'Türkçe' : 'English'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showLanguageDialog(provider),
-          ),
-
-          SwitchListTile(
-            activeColor: Colors.green,
-            secondary: Icon(
-              provider.notificationsEnabled ? Icons.notifications_active : Icons.notifications_off, 
-              color: Colors.red
+  void _showRatingDialog(bool isDark) {
+    int rating = 0;
+    showDialog(
+      context: context,
+      // Instead of redrawing the entire Settings page during the star-rating process, the StatefulBuilder is used to encapsulate 
+      //state changes within this dialog, thereby improving performance.
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Column(
+              children: [
+                const Icon(Icons.star_border_purple500, size: 50, color: Colors.amber),
+                const SizedBox(height: 10),
+                Text('rate_dialog_title'.tr(), textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+              ],
             ),
-            title: Text(provider.translate('notifications')),
-            subtitle: Text(provider.notificationsEnabled ? 'Açık / On' : 'Kapalı / Off'),
-            value: provider.notificationsEnabled,
-            onChanged: (val) {
-              // Bildirim ayarını değiştir
-              provider.toggleNotifications(val);
-              
-              // Kullanıcıya bilgi ver
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(val ? 'Bildirimler açıldı.' : 'Bildirimler kapatıldı.'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
-
-          const Divider(),
-          _buildHeader(provider.translate('about')),
-
-          ListTile(
-            leading: const Icon(Icons.privacy_tip, color: Colors.grey),
-            title: Text(provider.translate('privacy')),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showPrivacyDialog(provider),
-          ),
-          
-          ListTile(
-            leading: const Icon(Icons.star, color: Colors.amber),
-            title: Text(provider.translate('rate_app')),
-            onTap: () {
-               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Store sayfasına yönlendiriliyor...')),
-              );
-            },
-          ),
-          
-          // Logout section
-          const Divider(),
-          _buildHeader(provider.translate('account')),
-          
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              if (authProvider.isAuthenticated) {
-                return ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
-                  title: Text(
-                    provider.translate('logout'),
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                  onTap: () => _showLogoutDialog(context, authProvider, provider),
-                );
-              } else {
-                return ListTile(
-                  leading: const Icon(Icons.login, color: Colors.blue),
-                  title: Text(provider.translate('login')),
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('rate_dialog_desc'.tr(), textAlign: TextAlign.center, style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      iconSize: 40,
+                      padding: EdgeInsets.zero,
+                      icon: Icon(index < rating ? Icons.star : Icons.star_border, color: Colors.amber),
+                      onPressed: () => setDialogState(() => rating = index + 1),
                     );
-                  },
-                );
-              }
-            },
-          ),
-          
-          const SizedBox(height: 20),
-        ],
+                  }),
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.spaceEvenly,
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text('cancel'.tr(), style: const TextStyle(color: Colors.grey))),
+              ElevatedButton(
+                onPressed: rating > 0 ? () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('rate_dialog_thanks'.tr()), backgroundColor: Colors.green));
+                } : null,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                child: Text('rate_dialog_submit'.tr()), 
+              ),
+            ],
+          );
+        }
       ),
     );
   }
-  
-  void _showLogoutDialog(BuildContext context, AuthProvider authProvider, ThemeProvider themeProvider) {
+
+  void _showLogoutDialog(BuildContext context, AuthProvider authProvider, bool isDark) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(themeProvider.translate('logout')),
-        content: Text(themeProvider.translate('logout_confirm')),
+        backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+        title: Text('logout'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+        content: Text('logout_confirm'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade300 : Colors.black87)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(themeProvider.translate('cancel')),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('cancel'.tr())),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
               await authProvider.logout();
               if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
+                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text(
-              themeProvider.translate('logout'),
-              style: const TextStyle(color: Colors.white),
-            ),
+            child: Text('logout'.tr(), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -281,13 +204,123 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildHeader(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.grey,
-          fontWeight: FontWeight.bold,
-          fontSize: 13,
-        ),
+      child: Text(title.toUpperCase(), style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<ThemeProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final isDark = provider.themeMode == ThemeMode.dark;
+
+    // 0: Admin, 2: Employee. If neither of these applies, the person is a citizen.
+    // By checking the logged-in user's permission level (Role ID), settings such as “Accessibility” and 
+    //“Simple Mode”—which are reserved exclusively for citizens— are automatically hidden from the Admin and Staff screens.
+    final bool isNormalUser = authProvider.userRoleId != 0 && authProvider.userRoleId != 2;
+
+    return Scaffold(
+      backgroundColor: isDark ? Colors.black : Colors.grey.shade50,
+      appBar: AppBar(
+        title: Text('settings_title'.tr(), style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.blue,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: ListView(
+        children: [
+          // Show the “Accessibility” heading only if the user is a citizen (isNormalUser)
+          if (isNormalUser)
+            _buildHeader('accessibility'.tr()),
+          
+          // Show the “Simple Mode” option only if the user is a regular user (isNormalUser)
+          if (isNormalUser)
+            SwitchListTile(
+              activeColor: Colors.orange,
+              secondary: const Icon(Icons.accessibility_new, color: Colors.orange),
+              title: Text('settings_simple_mode'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
+              subtitle: Text('settings_simple_mode_desc'.tr(), style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+              value: provider.isSimpleMode,
+              onChanged: (val) => provider.toggleSimpleMode(val),
+            ),
+          
+          // If they are not a citizen (but an admin or employee), let’s add a “View” header so the settings below aren’t left hanging
+          if (!isNormalUser)
+            _buildHeader('Görünüm'), // No need to add it to JSON; it's an administrative panel
+
+          ListTile(
+            leading: const Icon(Icons.format_size, color: Colors.purple),
+            title: Text('font_size'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            subtitle: Text(_getFontSizeLabel(provider.textScaleFactor), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () => _showFontSizeDialog(provider, isDark),
+          ),
+          
+          SwitchListTile(
+            activeColor: Colors.blue,
+            secondary: const Icon(Icons.dark_mode, color: Colors.blueGrey),
+            title: Text('dark_mode'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            value: isDark,
+            onChanged: (val) => provider.toggleTheme(val),
+          ),
+
+          const Divider(),
+          _buildHeader('general'.tr()),
+
+          ListTile(
+            leading: const Icon(Icons.language, color: Colors.blue),
+            title: Text('language'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            subtitle: Text(context.locale.languageCode == 'tr' ? 'Türkçe' : 'English', style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () => _showLanguageDialog(isDark),
+          ),
+
+          SwitchListTile(
+            activeColor: Colors.green,
+            secondary: Icon(provider.notificationsEnabled ? Icons.notifications_active : Icons.notifications_off, color: Colors.red),
+            title: Text('notifications'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            subtitle: Text(provider.notificationsEnabled ? 'settings_notif_on'.tr() : 'settings_notif_off'.tr(), style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+            value: provider.notificationsEnabled,
+            onChanged: (val) => provider.toggleNotifications(val),
+          ),
+
+          const Divider(),
+          _buildHeader('about'.tr()),
+
+          ListTile(
+            leading: const Icon(Icons.privacy_tip, color: Colors.grey),
+            title: Text('privacy'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () => _showPrivacyDialog(isDark),
+          ),
+          
+          ListTile(
+            leading: const Icon(Icons.star, color: Colors.amber),
+            title: Text('rate_app'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            onTap: () => _showRatingDialog(isDark),
+          ),
+          
+          const Divider(),
+          _buildHeader('account'.tr()),
+          
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              if (authProvider.isAuthenticated) {
+                return ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: Text('logout'.tr(), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  onTap: () => _showLogoutDialog(context, authProvider, isDark),
+                );
+              } else {
+                return ListTile(
+                  leading: const Icon(Icons.login, color: Colors.blue),
+                  title: Text('login'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
+                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen())),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

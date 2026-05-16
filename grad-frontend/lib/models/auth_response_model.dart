@@ -2,9 +2,9 @@ import 'user_model.dart';
 
 /// Auth Response Model for login/register responses
 class AuthResponse {
-  final String? token;
-  final UserModel? user;
-  final String? message;
+  final String? token; // Secure session key
+  final UserModel? user; // The logged-in user's full profile
+  final String? message; // Error or success message
   final bool success;
 
   AuthResponse({

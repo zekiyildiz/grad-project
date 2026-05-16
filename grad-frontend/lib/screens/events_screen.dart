@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; 
 
-// Etkinlik Veri Modeli
 class EventItem {
   final String title;
   final String date;
@@ -13,15 +13,6 @@ class EventItem {
   EventItem(this.title, this.date, this.time, this.location, this.category, this.icon, this.color);
 }
 
-// Örnek Etkinlik Listesi
-final List<EventItem> dummyEvents = [
-  EventItem('Yaz Konserleri: Pop Gecesi', '10.11.2025', '20:00', 'Açıkhava Tiyatrosu', 'Müzik', Icons.music_note, Colors.pink),
-  EventItem('Mahalle Tiyatro Günleri', '12.11.2025', '19:30', 'Kültür Merkezi Salon A', 'Sanat', Icons.theaters, Colors.purple),
-  EventItem('Çevresel Farkındalık Semineri', '15.11.2025', '14:00', 'Belediye Konferans Salonu', 'Eğitim', Icons.lightbulb, Colors.orange),
-  EventItem('Halk Kütüphanesi Kitap İmza Günü', '18.11.2025', '16:00', 'Merkez Kütüphane', 'Kültür', Icons.book, Colors.brown),
-  EventItem('Engelliler Haftası Spor Turnuvası', '22.11.2025', '11:00', 'Kapalı Spor Salonu', 'Spor', Icons.sports_soccer, Colors.green),
-];
-
 class EventsScreen extends StatefulWidget {
   const EventsScreen({Key? key}) : super(key: key);
 
@@ -32,84 +23,337 @@ class EventsScreen extends StatefulWidget {
 class _EventsScreenState extends State<EventsScreen> {
   String? selectedCategory;
 
-  // Gerçek projede bu liste API'dan dinamik çekilir.
-  List<EventItem> get filteredEvents {
-    if (selectedCategory == null || selectedCategory == 'Tümü') {
-      return dummyEvents;
-    }
-    return dummyEvents.where((e) => e.category == selectedCategory).toList();
+  //List of Saved Events 
+  // It maintains the user's current state by storing the events they are interested in in device memory, enabling reactive state updates across screens.
+  final List<EventItem> _savedEvents = [];
+
+  //BOTTOM PANEL DESIGN 
+  void _showEventDetail(BuildContext context, EventItem event, bool isDark) {
+    bool isAlreadySaved = _savedEvents.contains(event);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent, 
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade900 : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min, 
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(10))),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    CircleAvatar(radius: 25, backgroundColor: event.color.withOpacity(0.2), child: Icon(event.icon, color: event.color, size: 28)),
+                    const SizedBox(width: 15),
+                    Expanded(child: Text(event.title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87))),
+                  ],
+                ),
+                const SizedBox(height: 25),
+                _buildDetailRow(Icons.calendar_today, 'event_date_time'.tr(), "${event.date} - ${event.time}", isDark),
+                const SizedBox(height: 15),
+                _buildDetailRow(Icons.location_on, 'events_location'.tr(), event.location, isDark),
+                const SizedBox(height: 15),
+                _buildDetailRow(Icons.category, 'events_filter_label'.tr(), event.category, isDark),
+                
+                const SizedBox(height: 35),
+                
+                //Dynamic Calendar Simulation Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  // To enhance the user experience (UX), an asynchronous (Future.delayed) wait time and 
+                  // a calendar picker interface have been simulated to mimic access to the device's native calendar API.
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      if (isAlreadySaved) {
+                        // If it's already there, remove it immediately
+                        setSheetState(() {
+                          _savedEvents.remove(event);
+                          isAlreadySaved = false;
+                        });
+                        setState(() {}); 
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('event_removed'.tr()), backgroundColor: Colors.orange),
+                        );
+                      } else {
+                        // OPEN THE CALENDAR INTERFACE
+                        DateTime? parsedDate;
+                        try {
+                          parsedDate = DateFormat('dd.MM.yyyy').parse(event.date);
+                        } catch (e) {
+                          parsedDate = DateTime.now();
+                        }
+
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: parsedDate,
+                          firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                          lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                          helpText: 'event_confirm_date'.tr(), 
+                          confirmText: 'event_add_calendar'.tr(), 
+                          cancelText: 'cancel'.tr(),
+                          builder: (context, child) {
+                            return Theme(
+                              data: isDark 
+                                ? ThemeData.dark().copyWith(
+                                    colorScheme: const ColorScheme.dark(
+                                      primary: Colors.blue, // Selected day circle
+                                      onPrimary: Colors.white, // Text color for the selected day
+                                      surface: Color(0xFF1E1E1E), // Calendar background
+                                      onSurface: Colors.white, // General calendar text color
+                                    ),
+                                    dialogBackgroundColor: Colors.grey.shade900,
+                                  )
+                                : ThemeData.light().copyWith(
+                                    colorScheme: const ColorScheme.light(
+                                      primary: Colors.blue,
+                                      onPrimary: Colors.white,
+                                      onSurface: Colors.black87,
+                                    ),
+                                    dialogBackgroundColor: Colors.white,
+                                  ),
+                              child: child!,
+                            );
+                          },
+                        );
+
+                        //START THE SIMULATION IF THE USER AGREES
+                        if (picked != null) {
+                          // Enable the loading animation (as if it were being added to the device's calendar)
+                          if (!context.mounted) return;
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.blue)),
+                          );
+
+                          await Future.delayed(const Duration(milliseconds: 800)); 
+                          
+                          if (!context.mounted) return;
+                          Navigator.pop(context); 
+
+                          // Add to the list and update the UI
+                          setSheetState(() {
+                            _savedEvents.add(event);
+                            isAlreadySaved = true;
+                          });
+                          setState(() {}); 
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('event_added'.tr()), backgroundColor: Colors.green),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isAlreadySaved ? Colors.red.shade400 : Colors.blue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                    ),
+                    icon: Icon(isAlreadySaved ? Icons.event_busy : Icons.event_available, color: Colors.white),
+                    label: Text(
+                      isAlreadySaved ? 'event_remove_calendar'.tr() : 'event_add_calendar'.tr(), 
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)
+                    ),
+                  ),
+                )
+              ],
+            )
+          );
+        }
+      )
+    );
+  }
+
+  //Screen Displaying Saved Events
+  void _showSavedEvents(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.7, 
+            padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade900 : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+            ),
+            child: Column(
+              children: [
+                Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(10)))),
+                const SizedBox(height: 15),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('event_my_calendar'.tr(), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                    IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                const Divider(),
+                Expanded(
+                  child: _savedEvents.isEmpty
+                      ? Center(child: Text('event_no_saved'.tr(), style: const TextStyle(color: Colors.grey, fontSize: 16)))
+                      : ListView.builder(
+                          itemCount: _savedEvents.length,
+                          itemBuilder: (context, index) {
+                            final event = _savedEvents[index];
+                            return Card(
+                              color: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
+                              child: ListTile(
+                                leading: CircleAvatar(backgroundColor: event.color.withOpacity(0.2), child: Icon(event.icon, color: event.color)),
+                                title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text('${event.date} - ${event.time}'),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                  onPressed: () {
+                                    setSheetState(() => _savedEvents.remove(event));
+                                    setState(() {}); 
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                )
+              ],
+            ),
+          );
+        }
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String title, String value, bool isDark) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 22, color: Colors.grey.shade500),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade500 : Colors.grey.shade600)),
+              const SizedBox(height: 2),
+              Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87)),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Tüm kategorileri Tümü seçeneğiyle oluşturma
-    final List<String> categories = ['Tümü'] + dummyEvents.map((e) => e.category).toSet().toList();
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final List<EventItem> dummyEvents = [
+      EventItem('event_1_title'.tr(), '10.11.2026', '20:00', 'event_1_loc'.tr(), 'event_cat_music'.tr(), Icons.music_note, Colors.pink),
+      EventItem('event_2_title'.tr(), '12.11.2026', '19:30', 'event_2_loc'.tr(), 'event_cat_art'.tr(), Icons.theaters, Colors.purple),
+      EventItem('event_3_title'.tr(), '15.11.2026', '14:00', 'event_3_loc'.tr(), 'event_cat_edu'.tr(), Icons.lightbulb, Colors.orange),
+      EventItem('event_4_title'.tr(), '18.11.2026', '16:00', 'event_4_loc'.tr(), 'event_cat_culture'.tr(), Icons.book, Colors.brown),
+      EventItem('event_5_title'.tr(), '22.11.2026', '11:00', 'event_5_loc'.tr(), 'event_cat_sport'.tr(), Icons.sports_soccer, Colors.green),
+    ];
+
+    final List<String> categories = ['events_cat_all'.tr()] + dummyEvents.map((e) => e.category).toSet().toList();
+
+    if (selectedCategory != null && !categories.contains(selectedCategory)) {
+      selectedCategory = 'events_cat_all'.tr();
+    }
+
+    List<EventItem> filteredEvents = dummyEvents;
+    if (selectedCategory != null && selectedCategory != 'events_cat_all'.tr()) {
+      filteredEvents = dummyEvents.where((e) => e.category == selectedCategory).toList();
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Etkinlik Takvimi'),
+        title: Text('events_app_bar_title'.tr()),
         backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.calendar_month, size: 26),
+                onPressed: () => _showSavedEvents(context, isDark),
+              ),
+              if (_savedEvents.isNotEmpty)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                    child: Text(
+                      '${_savedEvents.length}',
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                )
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
-          // 1. Kategori Filtresi
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             child: DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Kategori Filtresi',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.filter_list, color: Colors.blue),
+              decoration: InputDecoration(
+                labelText: 'events_filter_label'.tr(),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.filter_list, color: Colors.blue),
+                filled: true,
+                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100, 
               ),
-              value: selectedCategory ?? 'Tümü',
+              value: selectedCategory ?? 'events_cat_all'.tr(),
               items: categories.map((String category) {
-                return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(category),
-                );
+                return DropdownMenuItem<String>(value: category, child: Text(category));
               }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedCategory = newValue;
-                });
-              },
+              onChanged: (String? newValue) => setState(() => selectedCategory = newValue),
             ),
           ),
           
-          // 2. Etkinlik Listesi
           Expanded(
             child: ListView.builder(
               itemCount: filteredEvents.length,
               itemBuilder: (context, index) {
                 final event = filteredEvents[index];
+                bool isSaved = _savedEvents.contains(event); 
+
                 return Card(
                   elevation: 2,
                   margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  color: isDark ? Colors.grey.shade900 : Colors.white, 
                   child: ListTile(
                     leading: Icon(event.icon, color: event.color, size: 35),
-                    title: Text(
-                      event.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 4),
-                        Text(
-                          '${event.date} - ${event.time}',
-                          style: TextStyle(color: Colors.grey[700]),
-                        ),
-                        Text(
-                          'Yer: ${event.location} (${event.category})',
-                          style: TextStyle(color: event.color, fontSize: 12),
-                        ),
+                        Text('${event.date} - ${event.time}', style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey[700])),
+                        Text('${'events_location'.tr()}: ${event.location} (${event.category})', style: TextStyle(color: event.color, fontSize: 12)),
                       ],
                     ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // Etkinlik detay sayfasına yönlendirme
-                      print('${event.title} detayları açılıyor.');
-                    },
+                    trailing: isSaved 
+                        ? const Icon(Icons.check_circle, color: Colors.green) 
+                        : const Icon(Icons.chevron_right),
+                    onTap: () => _showEventDetail(context, event, isDark),
                   ),
                 );
               },
