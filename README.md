@@ -9,7 +9,7 @@ An end-to-end, hybrid Cloud-Edge computing solution designed to modernize urban 
 
 The system is built on a robust 3-tier hybrid architecture maximizing on-device efficiency and data isolation:
 
-![System Architecture](https://raw.githubusercontent.com/zekiyildiz/grad-project/v1/architecture.png)
+<img width="1128" height="608" alt="image" src="https://github.com/user-attachments/assets/e28c437b-67b0-4ac7-82c9-219301c107b4" />
 
 ## 🏛️ Architectural Overview & System Components
 The system is engineered across five distinct specialized layers to ensure maximum scalability, security, and real-time synchronization:
