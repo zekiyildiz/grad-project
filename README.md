@@ -5,6 +5,11 @@ An end-to-end, hybrid Cloud-Edge computing solution designed to modernize urban 
 > **TÜBİTAK 2209-A National Grant Recipient** 🎓 ✅  
 > Developed as a Graduation Project by Senior Computer Engineering Students at Ankara Yıldırım Beyazıt University (AYBÜ).
 
+## 🏛️ System Architecture & Logic Flow
+
+The system is built on a robust 3-tier hybrid architecture maximizing on-device efficiency and data isolation:
+<img width="2816" height="1536" alt="Gemini_Generated_Image_tbzjb7tbzjb7tbzj" src="https://github.com/user-attachments/assets/9dd74782-73e3-47d1-a106-9a6918cb2644" />
+
 ## 🏛️ Architectural Overview & System Components
 The system is engineered across five distinct specialized layers to ensure maximum scalability, security, and real-time synchronization:
 
