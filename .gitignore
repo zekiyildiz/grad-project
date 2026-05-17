@@ -2,6 +2,13 @@
 .DS_Store
 .idea/
 
+# Secrets - NEVER commit these
+serviceAccountKey.json
+*.json.key
+.env
+.env.*
+!.env.example
+
 # Sub-projects
 node_modules/
 dist/
