@@ -10,8 +10,8 @@ class ApiConfig {
     }
     try {
       if (Platform.isAndroid) {
-      // Use this address for the emulator; on physical devices, you'll need to enter the IP address manually. 
-       return 'http://10.0.2.2:3001';
+      // Ngrok tunnel - kafedeki fiziksel cihaz testi için
+       return 'https://grapple-retrain-unisexual.ngrok-free.dev';
       }
     } catch (e) {
       // Fallback for platforms where Platform.isAndroid points to something else

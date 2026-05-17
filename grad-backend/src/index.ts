@@ -53,7 +53,7 @@ router.post('/upload', upload.single('image'), (req, res) => {
     // Determine whether the server is running on localhost or on the production server.
     const protocol = req.protocol;
     const host = req.get('host');
-    
+
     // The full URL that the app will save to its database 
     const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
